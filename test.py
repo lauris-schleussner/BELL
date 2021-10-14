@@ -8,14 +8,15 @@ import glob
 AUTOTUNE = tf.data.AUTOTUNE
 batch_size = 32
 
-image_count = len(list(glob.glob('D:/BELL/wikiart-dataset/wikiart/*/*.jpg')))
+image_count = len(list(glob.glob('D:/BELL/IADataset/*/*.jpg')))
 # mage_count = 200
 
-list_ds = tf.data.Dataset.list_files(str("D:/BELL/wikiart-dataset/wikiart/*/*"), shuffle=True)
+list_ds = tf.data.Dataset.list_files(str("D:/BELL/IADataset/*/*.jpg"), shuffle=True)
 list_ds = list_ds.shuffle(image_count, reshuffle_each_iteration=False)
 
-class_names = np.array(os.listdir('D:/BELL/wikiart-dataset/wikiart'))
+class_names = np.array(os.listdir('D:/BELL/IADataset/'))
 np.sort(class_names)
+print(class_names)
 
 val_size = int(image_count * 0.2)
 train_ds = list_ds.skip(val_size)
@@ -48,7 +49,7 @@ def process_path(file_path):
 train_ds = train_ds.map(process_path, num_parallel_calls=AUTOTUNE)
 val_ds = val_ds.map(process_path, num_parallel_calls=AUTOTUNE)
 
-for image, label in train_ds.take(1):
+for image, label in train_ds.take(50):
   print("Image shape: ", image.numpy().shape)
   print("Label: ", label.numpy())
 
