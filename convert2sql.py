@@ -3,13 +3,15 @@
 # only works for Lucas Davis's scraper
 #
 
+# TODO cleanup dataset (remove NONE)
+
 import json
 import sqlite3
 from pathlib import Path
 
 # connect
-DBNAME = "wikiartDataset.db"
-DSPATH = "wikiart-master/saved/" # path of the "meta" folder 
+DBNAME = "cleanedWikiartDataset.db"
+DSPATH = "wikiart-master/saved/" # path of the "saved" folder 
 conn = sqlite3.connect(DBNAME)
 c = conn.cursor()
 
@@ -90,26 +92,32 @@ def fill():
 
                 # check if image exists, skip if not
                 if Path(path).exists():
+                    if artwork["genre"] is not None:
 
 
-                    # Informationen werden für jedes Bild gesammelt
-                    imgid = artwork["contentId"]
-                    artworktitle = artwork["title"]
-                    artistName = artwork["artistName"]
-                    year = artwork["completitionYear"]
-                    link = artwork["image"]
-                    location = artwork["location"]
-                    genre = artwork["genre"]
-                    style = artwork["style"]
-                    galleryName = artwork["galleryName"]
-                    description = artwork["description"]
+                        # Informationen werden für jedes Bild gesammelt
+                        imgid = artwork["contentId"]
+                        artworktitle = artwork["title"]
+                        artistName = artwork["artistName"]
+                        year = artwork["completitionYear"]
+                        link = artwork["image"]
+                        location = artwork["location"]
+                        genre = artwork["genre"]
+                        style = artwork["style"]
+                        galleryName = artwork["galleryName"]
+                        description = artwork["description"]
 
-                    # save in table "artworks"
-                    sql = "INSERT INTO artworks(id, title, artistName, path, year, link, location, genre, style, galleryName, description) VALUES (?, ?,?,?, ?, ?, ?, ?, ?,?,?)"
-                    val = [(imgid, artworktitle, artistName, path, year, link, location, genre, style, galleryName, description)]
-                    c.executemany(sql, val)
+                        # save in table "artworks"
+                        sql = "INSERT INTO artworks(id, title, artistName, path, year, link, location, genre, style, galleryName, description) VALUES (?, ?,?,?, ?, ?, ?, ?, ?,?,?)"
+                        val = [(imgid, artworktitle, artistName, path, year, link, location, genre, style, galleryName, description)]
+                        c.executemany(sql, val)
+                        
+                    else:
+                        print(artwork["genre"], "genre missing")
+
                 else:
-                    print(path, "image missing")
+                    # print(path, "image missing")
+                    pass
 
 
             except Exception as e:
