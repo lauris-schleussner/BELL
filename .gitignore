@@ -13,7 +13,7 @@ wikiart-master/LICENSE
 wikiart-master/saved
 logs/
 models/
-wikiartDataset.db
+*.db
 .vscode/settings.json
 
 workspace.code-workspace
