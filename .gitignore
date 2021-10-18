@@ -11,6 +11,9 @@ IADataset/
 wikiart-master/.gitignore
 wikiart-master/LICENSE
 wikiart-master/saved
+logs/
+models/
+wikiartDataset.db
 
 workspace.code-workspace
 
