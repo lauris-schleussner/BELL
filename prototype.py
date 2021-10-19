@@ -18,7 +18,7 @@ AUTOTUNE = tf.data.AUTOTUNE
 batch_size = 32
 checkpoint_path = "models/checkpoint.ckpt"
 checkpoint_dir = os.path.dirname(checkpoint_path)
-DBNAME = "cleanedWikiartDataset.db"
+DBNAME = "WikiartDataset.db"
 
 # create connection to dataset
 conn = sqlite3.connect(DBNAME)
@@ -55,6 +55,7 @@ for genre in classnames:
         pass
     
 print(classnames)
+print("total classes: ", len(classnames))
 
 # dataset contains path + style
 dataset = tf.data.experimental.SqlDataset("sqlite", "wikiartDataset.db", "SELECT path, style FROM artworks", (tf.string, tf.string))
@@ -72,7 +73,8 @@ def processImage(path, label):
     width = 100
 
     img = tf.io.read_file(path) # Load the raw data from the file as a string
-    img = tf.io.decode_jpeg(img, channels=3) # decode image
+    print(path)
+    img = tf.io.decode_image(img, channels=3, expand_animations = False) # decode image
     img = tf.image.resize(img, [height, width]) # resize image
 
     label = label == classnames
