@@ -12,13 +12,12 @@ import datetime
 import sqlite3
 
 
-
-
 AUTOTUNE = tf.data.AUTOTUNE
 batch_size = 32
 checkpoint_path = "models/checkpoint.ckpt"
 checkpoint_dir = os.path.dirname(checkpoint_path)
 DBNAME = "WikiartDataset.db"
+CLASSNUMBER = 10
 
 # create connection to dataset
 conn = sqlite3.connect(DBNAME)
@@ -44,20 +43,30 @@ for i in res:
                 classnames.append(k)
 
 # filter out all classes under threshold, takes eternity
+orderlist = [] # [genre, number of images]
 for genre in classnames:
-    try:
-        c.execute("SELECT genre FROM artworks WHERE genre LIKE '%" + genre + "%'")
-        res = c.fetchall()
-        if len(res)>= 1000:
-            print(genre, len(res))
-            classnames.remove(genre)
-    except Exception as e:
-        pass
-    
-print(classnames)
-print("total classes: ", len(classnames))
+    c.execute("SELECT COUNT(style) FROM artworks WHERE style LIKE '%" + genre + "%'")
+    res = c.fetchone() 
+    orderlist.append([genre, res[0]])
 
-# dataset contains path + style
+# sort result list
+orderlist = sorted(orderlist, key=lambda l:l[1], reverse=True)
+
+# take classes with most results
+orderlist = orderlist[0:CLASSNUMBER]
+
+# store the least amount of images
+imgPerClass = orderlist[-1][1]
+
+# get list of all classes
+classlist = []
+for style in orderlist:
+    classlist.append(style[0])
+
+# create SQL querry
+querry = "SELECT path, style FROM artworks WHERE style IN " + repr(tuple(map(str, classlist))) + " ORDER BY RANDOM() LIMIT " + str(imgPerClass)
+
+# create dataset
 dataset = tf.data.experimental.SqlDataset("sqlite", "wikiartDataset.db", "SELECT path, style FROM artworks", (tf.string, tf.string))
 
 # shuffle dataset
