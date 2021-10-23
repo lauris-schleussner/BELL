@@ -15,6 +15,7 @@ logs/
 models/
 *.db
 .vscode/settings.json
+wand/
 
 workspace.code-workspace
 
