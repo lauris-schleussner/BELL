@@ -1,35 +1,45 @@
-# https://stackoverflow.com/questions/46854496/python-script-to-detect-broken-images
+# if a painting has multiple styles associated with it, we take the most popular one and discard the others
 import glob
-from PIL import Image
-import os
-
-imglist = glob.glob("wikiart-master/saved/images/*/*/*.jpg")
+imglist = glob.glob("wikiart-master\saved\images\*\*\*.jpg")
 print(len(imglist))
+from PIL import Image
+import sqlite3
 
-removelist = []
-counter = 0
-for filename in imglist:
-    counter +=1
-    print(counter)
-    if filename.endswith('.jpg'):
-        try:
-            img = Image.open(filename)  # open the image file
-            img.verify()  # verify that it is, in fact an image
-        except (IOError, SyntaxError) as e:
-            print(e)
-            print(filename)
-            removelist.append(filename)
-            
-print(removelist)
-failedlist = []
+conn = sqlite3.connect("WikiartDataset.db")
+c = conn.cursor()
 
-for file in removelist:
-    print(file)
-    try:
-        os.remove(filename)
-    except:
-        print("failed to remove", file)
-        failedlist.append(file)
+# get list of all unique labels
+c.execute("SELECT DISTINCT style FROM artworks")
+res = c.fetchall()
 
-print("failed:")
-print(failedlist)
+# obtain all classnames as images can contain multiple
+classlist = []
+for i in res:
+    for j in list(i):
+        try: # error with "NONE"
+            jlist = j.split(",")
+        except:
+            pass
+        for k in jlist:
+            if k not in classlist:
+                classlist.append(k)
+
+orderlist = [] # [genre, number of images]
+for genre in classlist:
+    c.execute("SELECT COUNT(style) FROM artworks WHERE style LIKE '%" + genre + "%'")
+    res = c.fetchone() 
+    orderlist.append([genre, res[0]])
+
+orderlist = sorted(orderlist, key=lambda l:l[1], reverse=True)
+print(orderlist)
+quit()
+# sort result list
+orderlist = sorted(orderlist, key=lambda l:l[1], reverse=True)
+
+for genre, number in orderlist:
+    print(genre)
+    c.execute("UPDATE artworks SET style = '" + genre + "' WHERE style LIKE '%" + genre + "%'")
+
+c.execute("SELECT DISTINCT style FROM artworks")
+res = c.fetchall()
+print(res)
