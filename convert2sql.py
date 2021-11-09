@@ -8,18 +8,19 @@
 import json
 import sqlite3
 from pathlib import Path
+import re
 
 # connect
-DBNAME = "cleanedWikiartDataset.db"
-DSPATH = "wikiart-master/saved/" # path of the "saved" folder 
+DBNAME = "WikiartDatasetMultiStyles.db"
+DSPATH = "D:/wikiartbackup/saved/" # path of the "saved" folder
+
 conn = sqlite3.connect(DBNAME)
 c = conn.cursor()
 
 def create():
     # create artist Table
-    print("asjdkh")
     c.execute("""CREATE TABLE IF NOT EXISTS artists (
-                id integer PRIMARY KEY,
+                id integer PRIMARY KEY AUTOINCREMENT,
                 name text NOT NULL,
                 birthdate text,
                 deathdate text,
@@ -27,7 +28,8 @@ def create():
                 )""")
     # create artwork Table
     c.execute("""CREATE TABLE IF NOT EXISTS artworks (
-                id integer PRIMARY KEY,
+                id integer PRIMARY KEY AUTOINCREMENT,
+                imgid integer NOT NULL,
                 title text NOT NULL,
                 artistName text,
                 path text,
@@ -76,9 +78,10 @@ def fill():
 
         # open each 
         counter = 0
+        print(artistcounter)
         for artwork in artworkData:
             counter += 1
-            print("image", counter, "|", len(artworkData), "  artist", artistcounter, "|", len(jsonFile))
+            # print("image", counter, "|", len(artworkData), "  artist", artistcounter, "|", len(jsonFile))
             try:
  
                 # path of each artwork is combined 
@@ -92,8 +95,7 @@ def fill():
 
                 # check if image exists, skip if not
                 if Path(path).exists():
-                    if artwork["genre"] is not None:
-
+                    if None.__ne__(artwork["style"]):
 
                         # Informationen werden für jedes Bild gesammelt
                         imgid = artwork["contentId"]
@@ -103,17 +105,31 @@ def fill():
                         link = artwork["image"]
                         location = artwork["location"]
                         genre = artwork["genre"]
+                        
+                        # style can have multiple attributes.
+                        # To fix this we replace spaces in each label with "_"
+                        # multiple labels are seperated by ", " we replace this with just a ","
+                        # some style labels already contain "-" so we replace this with "_" might help down the road
+                        # old: Art Nouveau (Modern), Biedermeier
+                        # new: Art_Nouveau_(Modern),Biedermeier
+                        # print("old:", style)
                         style = artwork["style"]
+                        style = re.sub(", ", ",", style)
+                        style = re.sub(" ", "_", style)
+                        style = re.sub("-", "_", style)
+                        style = style.split(",")
+                        # print("new:", style)
                         galleryName = artwork["galleryName"]
                         description = artwork["description"]
 
-                        # save in table "artworks"
-                        sql = "INSERT INTO artworks(id, title, artistName, path, year, link, location, genre, style, galleryName, description) VALUES (?, ?,?,?, ?, ?, ?, ?, ?,?,?)"
-                        val = [(imgid, artworktitle, artistName, path, year, link, location, genre, style, galleryName, description)]
-                        c.executemany(sql, val)
-                        
+                        # create new row for every style that an image has
+                        for singlestyle in style:
+                            createrow(imgid, artworktitle, artistName, path, year, link, location, genre, singlestyle, galleryName, description)
+
+
                     else:
-                        print(artwork["genre"], "genre missing")
+                        pass
+                        # print(artwork["genre"], "genre missing")
 
                 else:
                     # print(path, "image missing")
@@ -125,6 +141,14 @@ def fill():
 
     conn.commit()
     conn.close()
+
+# create a row of the database # TODO ugly
+def createrow(imgid, artworktitle, artistName, path, year, link, location, genre, singlestyle, galleryName, description):
+
+    sql = "INSERT INTO artworks(imgid, title, artistName, path, year, link, location, genre, style, galleryName, description) VALUES (?,?,?,?, ?, ?, ?, ?, ?,?,?)"
+    val = [(imgid, artworktitle, artistName, path, year, link, location, genre, singlestyle, galleryName, description)]
+    c.executemany(sql, val)
+    
 
 if __name__ == "__main__":
     create()
