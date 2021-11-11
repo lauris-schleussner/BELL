@@ -1,32 +1,38 @@
 import sqlite3
 
-DBNAME = "wikiartDataset.db"
+DBNAME = "WikiartDataset.db"
 conn = sqlite3.connect(DBNAME)
 c = conn.cursor()
 
-c.execute("SELECT genre FROM artworks WHERE genre IS NOT NULL")
+c.execute("SELECT DISTINCT style FROM artworks")
 res = c.fetchall()
 
-print(len(res))
 
-# Genre spalte kann mehrere enthalten
-# werden gesplittet
-unique = []
+# obtain all classnmaes
+classnames = []
 for i in res:
     for j in list(i):
-        jlist = j.split(",") # splitten in einzelne genres
+        try: # error with "NONE"
+            jlist = j.split(",")
+        except:
+            pass
         for k in jlist:
-            if k not in unique:
-                unique.append(k)
+            if k not in classnames:
+                classnames.append(k)
 
-print(unique)
 
-for genre in unique:
+# filter out all classes under threshold, takes eternity
+for genre in classnames:
     try:
-        c.execute("SELECT genre FROM artworks WHERE genre LIKE '%" + genre + "%'")
-        res = c.fetchall()
-        if len(res)>= 200:
+        c.execute("SELECT COUNT(genre) FROM artworks WHERE style LIKE '%" + genre + "%'")
+        res = c.fetchone()
+        print(res[0])
+        if len(res)>= 1000:
             print(genre, len(res))
+            classnames.remove(genre)
     except Exception as e:
+        print(e)
         pass
+
+print(len(classnames))
 
