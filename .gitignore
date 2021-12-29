@@ -5,7 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
-dataset_resized
+resized
+originalsize
 
 .vscode/
 IADataset/
@@ -17,6 +18,9 @@ models/
 *.db
 .vscode/settings.json
 wandb/
+resized_1/
+originalsizeclean/
+originalsizedirty/
 
 workspace.code-workspace
 
