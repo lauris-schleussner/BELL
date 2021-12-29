@@ -1,4 +1,5 @@
-# return list of all images in a directory
+# return list of all imagepaths in a directory, recursively depth doesnt matter
+# takes some time on first execution, probably windows caching
 import glob
 
 def getfrompath(path):
@@ -7,5 +8,5 @@ def getfrompath(path):
 
 
 if __name__ == "__main__":
-    main("D:\BELL\wikiart-master\saved\images")
+    getfrompath("D:\BELL\wikiart-master\saved\images")
 
