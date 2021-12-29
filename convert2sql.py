@@ -9,15 +9,13 @@ import json
 import sqlite3
 from pathlib import Path
 import re
+from tqdm import tqdm
+import os
+import plac
 
-# connect
-DBNAME = "WikiartDatasetMultiStyles.db"
-DSPATH = "D:/wikiartbackup/saved/" # path of the "saved" folder
-
-conn = sqlite3.connect(DBNAME)
-c = conn.cursor()
 
 def create():
+
     # create artist Table
     c.execute("""CREATE TABLE IF NOT EXISTS artists (
                 id integer PRIMARY KEY AUTOINCREMENT,
@@ -32,6 +30,7 @@ def create():
                 imgid integer NOT NULL,
                 title text NOT NULL,
                 artistName text,
+                filename text,
                 path text,
                 year text,
                 link text,
@@ -39,18 +38,18 @@ def create():
                 genre text,
                 style text,
                 galleryName text,
-                description text
+                description text,
+                corrupt bool,
+                used bool
                 )""")
 
-def fill():
+def fill(DSPATH):
     # artists.json contains a list of all artists
     with open(DSPATH + "meta/artists.json", encoding="latin-1") as f:
         jsonFile = json.load(f)
 
     # obtain values and loop over every artist
-    artistcounter = 0
-    for artistDict in jsonFile:
-        artistcounter += 1
+    for artistDict in tqdm(jsonFile):
 
         artistUrl = artistDict["url"]
         name = artistDict["artistName"]
@@ -75,13 +74,8 @@ def fill():
             print(e)
             print(name, "missing")
             continue
-
-        # open each 
-        counter = 0
-        print(artistcounter)
+        
         for artwork in artworkData:
-            counter += 1
-            # print("image", counter, "|", len(artworkData), "  artist", artistcounter, "|", len(jsonFile))
             try:
  
                 # path of each artwork is combined 
@@ -91,6 +85,7 @@ def fill():
                     year = "unknown-year"
                 else:
                     year = artwork["yearAsString"]
+
                 path = DSPATH + "images/" + str(artwork["artistUrl"]) + "/" + year +"/" + str(artwork["contentId"]) + ".jpg"
 
                 # check if image exists, skip if not
@@ -101,10 +96,13 @@ def fill():
                         imgid = artwork["contentId"]
                         artworktitle = artwork["title"]
                         artistName = artwork["artistName"]
+                        # adjust path prefix here
                         year = artwork["completitionYear"]
                         link = artwork["image"]
                         location = artwork["location"]
                         genre = artwork["genre"]
+                        filename = os.path.basename(path)
+                        path = path
                         
                         # style can have multiple attributes.
                         # To fix this we replace spaces in each label with "_"
@@ -122,11 +120,27 @@ def fill():
                         galleryName = artwork["galleryName"]
                         description = artwork["description"]
 
+                        relevantstyles = ["Impressionism", "Realism", "Romanticism", "Expressionism" "Art_Nouveau_(Modern)"]
+
+                        # if the style is part of the "relevant ones" and if an image only has one style attribute. the "used" flag is set
+                        # images with multiple styles are not stored in the db
+                        if len(style) == 1:
+                            if str(style[0]) in relevantstyles:
+                                used = True
+                            else:
+                                used = False
+
+                        # corrupt flag is not set by default as it is set later in the cleaning process
+                        corrupt = False
+
+                        createrow(imgid, artworktitle, artistName, filename, path, year, link, location, genre, style[0], galleryName, description, corrupt, used)      
+                        
+                        '''
                         # create new row for every style that an image has
                         for singlestyle in style:
-                            createrow(imgid, artworktitle, artistName, path, year, link, location, genre, singlestyle, galleryName, description)
-
-
+                            createrow(imgid, artworktitle, artistName, filename, year, link, location, genre, singlestyle, galleryName, description)
+                        '''
+                    
                     else:
                         pass
                         # print(artwork["genre"], "genre missing")
@@ -135,21 +149,37 @@ def fill():
                     # print(path, "image missing")
                     pass
 
-
+        
             except Exception as e:
                 print(e)
+    
+
+# create a row of the database # TODO ugly
+def createrow(imgid, artworktitle, artistName, filename, path, year, link, location, genre, singlestyle, galleryName, description, corrupt, used):
+
+    sql = "INSERT INTO artworks (imgid, title, artistName, filename, path, year, link, location, genre, style, galleryName, description, corrupt, used) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    val = [(imgid, artworktitle, artistName, filename, year, link, path, location, genre, singlestyle, galleryName, description, corrupt, used)]
+    c.executemany(sql, val)
+
+def main(DSPATH = "wikiart-master/saved/", DBNAME = "database.db"):
+    "Path of the 'saved' Folder (example: 'D:/BELL/data/saved/'), name of the datbase (example: 'mybeautifulnewsqldataset.db')"
+    """
+    python convert2sql.py wikiart-master/saved/ database.db
+    """
+
+    # connect to DB
+    global conn, c
+    conn = sqlite3.connect(DBNAME)
+    c = conn.cursor()
+
+    # create database layout
+    create()
+
+    # fill database
+    fill(DSPATH)
 
     conn.commit()
     conn.close()
 
-# create a row of the database # TODO ugly
-def createrow(imgid, artworktitle, artistName, path, year, link, location, genre, singlestyle, galleryName, description):
-
-    sql = "INSERT INTO artworks(imgid, title, artistName, path, year, link, location, genre, style, galleryName, description) VALUES (?,?,?,?, ?, ?, ?, ?, ?,?,?)"
-    val = [(imgid, artworktitle, artistName, path, year, link, location, genre, singlestyle, galleryName, description)]
-    c.executemany(sql, val)
-    
-
 if __name__ == "__main__":
-    create()
-    fill()
+    plac.call(main)
