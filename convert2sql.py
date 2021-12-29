@@ -127,8 +127,10 @@ def fill(DSPATH):
                         if len(style) == 1:
                             if str(style[0]) in relevantstyles:
                                 used = True
+                                print(style[0])
                             else:
                                 used = False
+                                continue # continue with next artwork if 
 
                         # corrupt flag is not set by default as it is set later in the cleaning process
                         corrupt = False
