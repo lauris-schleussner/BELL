@@ -13,20 +13,22 @@ import sqlite3
 
 def main():
     # network parameter settings
-    BATCHSIZE = 32
+    BATCHSIZE = 10
     EPOCHS = 1
     LEARNINGRATE = 0.001 # default Adam learning rate
-    FULLSIZE = False # True: Images are taken from the "originalsize/" folder and rescaled during execution. False: pre-scaled versions are used. There should not be a difference apart from performance
-    IMGSIZE = 200 # images are rescaled to a square, size in px
+    IMGPERCLASS = 100 # 1600 # how many images there should be per class. # TODO determine this
+    CLASSNUMBER = 7 # should be around 10-20 to make sense
+    IMAGENUMBER = IMGPERCLASS * CLASSNUMBER # 
 
     # paths
-    MODELPATH = "models/"
+    MODELPATH = "D:/BELL/models"
     checkpoint_path = "models/checkpoint.ckpt"
     checkpoint_dir = os.path.dirname(checkpoint_path)
     DBNAME = "database.db"
 
     # Tensorflow Stuff 
     AUTOTUNE = tf.data.AUTOTUNE
+
 
     # Weights and Biases Stuff
     '''
@@ -44,25 +46,61 @@ def main():
     # get list of all unique styles returns list of tupels with one datapair each
     c.execute("SELECT DISTINCT style FROM artworks")
     res = c.fetchall()
+
     # convert list of tupels to clean list of strings
     classlist = []
     for i in res:
             classlist.append(i[0])
-    
-    CLASSNUMBER = len(classlist)
-    print(CLASSNUMBER)
+            print(i[0])
 
-    # select random path, style tupels from the DB
-    querry = "SELECT filename, style FROM artworks ORDER BY RANDOM()"
-    c.execute(querry)
-    res = c.fetchall()
+    # filter out None Types that appear
+    classlist = filter(None.__ne__, classlist)
 
-    IMAGENUMBER = len(res)
+    # filter out all classes under threshold
+    orderlist = [] # ["style", "number of images"]
+    for style in classlist:
+        c.execute("SELECT COUNT(style) FROM artworks WHERE style = '" + style + "'")
+        amount = c.fetchone() 
+        orderlist.append([style, amount[0]])
+
+    # sort result list by number of images each genre has
+    orderlist = sorted(orderlist, key=lambda l:l[1], reverse=True)
+
+    # take specified number of styles that have the most images
+    orderlist = orderlist[0:CLASSNUMBER]
+
+    # determine amount of images in "smallest" style
+    # = smallest possible class size as each class must have the same size
+    # if smallest possible class size is surpassed, IMGPERCLASS is set to the max possible amount
+    maxPossiblePerClass = orderlist[-1][1]
+    if IMGPERCLASS >= maxPossiblePerClass:
+        IMGPERCLASS = maxPossiblePerClass
+        print("Too many images per class specified, taking max possible amount")
+    print("images per class:", IMGPERCLASS)
+
+    # get list of all classes without their size
+    classlist = []
+    for style in orderlist:
+        classlist.append(style[0])
+
+    print("classnumber: ", len(classlist))
+    print("classes:", classlist)
+
+    # fetch querry
+    # randomly selects IMGPERCLASS-many mages from each class
+    # The shuffeling is done before actually selecting, so these images *should* be random im IMGPERCLASS is smaller than the actual amount of images TODO verify
+    # the path is added to a long list
+    res = []
+    for classname in classlist:
+        querry = "SELECT path, style FROM artworks WHERE style = '" + classname + "' ORDER BY RANDOM() LIMIT " + str(IMGPERCLASS)
+        c.execute(querry)
+        res += c.fetchall()
 
     # create dataset from list of all paths
     dataset = tf.data.Dataset.from_tensor_slices(res)
 
-    # shuffle again for good meassure
+    # shuffle dataset TODO might be faster to numpy-shuffle the pathlist first
+    # images in each class are shuffled from SQL querry but not the classes itself
     dataset = dataset.shuffle(IMAGENUMBER, reshuffle_each_iteration=True)
 
     # split Dataset 80/10/10 TODO ugly
@@ -77,33 +115,22 @@ def main():
     print("val_ds", val_ds.cardinality())
     print("test_ds", test_ds.cardinality())
 
-
-    # for every datapair [filename, label]:
+    # for every datapair [path, label]:
     def processImage(datapair):
+        # TODO determine
+        height = 150
+        width = 150
 
         # argmax encode label: 
         label = datapair[1] == classlist
         label = tf.argmax(label) # argmax encode label
 
-        # prescaled images are used
-        if not FULLSIZE: 
-            path = "resized/" + datapair[0]
+        # decode and resize image
+        img = tf.io.read_file(datapair[0]) # Load the raw data from the file as a string
+        img = tf.io.decode_image(img, channels=3, expand_animations = False)
+        img = tf.image.resize(img, [height, width])
 
-            img = tf.io.read_file(path) # Load the raw data from the file as a string
-            img = tf.io.decode_image(img, channels=3, expand_animations = False)
-            img = tf.cast(img, tf.float32)
-            
-            return img, label
-        
-        # images are rescaled during runtime
-        else:
-            path = "originalsize/" + datapair[0]
-
-            img = tf.io.read_file(path) # Load the raw data from the file as a string
-            img = tf.io.decode_image(img, channels=3, expand_animations = False)
-            img = tf.image.resize(img, [IMGSIZE, IMGSIZE])
-
-            return img, label
+        return img, label
 
     # data processing function is mapped to each [path, label combo]
     train_ds = train_ds.map(processImage, num_parallel_calls=AUTOTUNE)
@@ -134,15 +161,24 @@ def main():
     '''
     # define model as list of keras layers
     model = tf.keras.Sequential([
-        tf.keras.layers.Conv2D(32, (3,3), padding='same', activation="relu", input_shape = (500, 500, 3)),
-        tf.keras.layers.MaxPooling2D((2, 2), strides=2),
-
-        tf.keras.layers.Conv2D(64, (3,3), padding='same', activation="relu"),
-        tf.keras.layers.MaxPooling2D((2, 2), strides=2),
-
+        tf.keras.layers.experimental.preprocessing.Rescaling(1./255),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(100, activation="relu"),
-        tf.keras.layers.Dense(10, activation="relu")
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(CLASSNUMBER)
         ])
 
     # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
@@ -152,8 +188,7 @@ def main():
     # configure model for training
     model.compile(
         optimizer=opt,
-        loss=tf.losses.SparseCategoricalCrossentropy(), # labels are not one-hot encoded # TODO figure out which loss function should be used for which label encoding
-        #loss=tf.losses.CategoricalCrossentropy(), # labels are one-hot encoded
+        loss=tf.losses.SparseCategoricalCrossentropy(from_logits=True), # TODO shouldnt the optimizer take care of this?
         metrics=['accuracy'])
 
     # callbacks that are triggered during training, create checkpoints
@@ -173,8 +208,8 @@ def main():
     model.save(MODELPATH)
 
     # used by confusionmatrix.py so i dont have to implement dynamically getting labels and paths again...
-    return [model, classlist, test_ds]
+    return [model, orderlist, test_ds]
 
 if __name__ == "__main__":
-    # input("to compute confusionmatrix start the other script first, continue regardless? press any key ")
+    input("to compute confusionmatrix start the other script first, continue regardless? press any key")
     main()
