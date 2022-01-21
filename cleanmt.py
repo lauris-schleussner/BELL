@@ -24,7 +24,10 @@ import pickle
 
 import multiprocessing as mp
 
-def findcorrupt(pathlist):
+def findcorruptresizeandcopy(arguments):
+
+    pathlist = arguments[0]
+    outfolderresized = arguments[1]
 
     corruptimages = []
     validimages = []
@@ -41,24 +44,15 @@ def findcorrupt(pathlist):
             image_test = tf.image.convert_image_dtype(image_o, tf.float32)
             image_test = tf.image.resize_with_pad(image_test, 500, 500)
 
+            # save
+            tf.keras.utils.save_img(outfolderresized + name, image_test)
+
             # if passes as valid add to list
             validimages.append(imgpath)
 
         except Exception as e:
-            logging.exception("corrupt file found during file checking: " + str(imgpath))
+            # logging.exception("corrupt file found during file checking: " + str(imgpath))
             corruptimages.append(imgpath)
-
-    # safe valid images to file
-    f = open("validpaths.txt", "a")
-    for validpath in validimages:
-        f.write(str(validpath))
-    f.close()
-
-    # safe corrupt images to file
-    f = open("corruptpaths.txt", "a")
-    for corruptpath in corruptimages:
-        f.write(str(corruptpath))
-    f.close()
 
     return [validimages, corruptimages]
 
@@ -75,19 +69,30 @@ def resizeandcopy(arguments):
     validimagepaths = arguments[0]
     outfolderresized = arguments[1]
 
+    # for images that are found to be broken during saving
+    corruptimages = []
+
     validimages = []
     for imgpath in tqdm(validimagepaths):
         
-        name = os.path.basename(imgpath)
+        # still fails sometimes
+        try:
+
+            name = os.path.basename(imgpath)
+            
+            # resize file ans save to output folder
+            image = tf.io.read_file(imgpath)
+            image = tf.io.decode_image(image, channels=3)
+            image = tf.image.convert_image_dtype(image, tf.float32)
+            image = tf.image.resize_with_pad(image, 500, 500)
+            tf.keras.utils.save_img(outfolderresized + name, image)
+
+        except Exception as e:
+            # logging.exception("corrupt file found during resizing: " + str(imgpath))
+            corruptimages.append(imgpath)
+
         
-        # resize file ans save to output folder
-        image = tf.io.read_file(imgpath)
-        image = tf.io.decode_image(image, channels=3)
-        image = tf.image.convert_image_dtype(image, tf.float32)
-        image = tf.image.resize_with_pad(image, 500, 500)
-        tf.keras.utils.save_img(outfolderresized + name, image)
-    
-    return 0
+    return corruptimages
 
 def removefromdb(corruptimages, dbname):
 
@@ -96,12 +101,14 @@ def removefromdb(corruptimages, dbname):
 
     # get id of the corrupt image from filepath
     for filename in tqdm(corruptimages):
+        print(filename)
         p = Path(filename)
         id = p.stem
+        print(id)
 
-        c.execute("UPDATE artworks SET corrupt = True WHERE id = '" + id + "'")
+        c.execute("UPDATE artworks SET corrupt = True WHERE imgid = '" + id + "'")
 
-    #conn.commit()
+    conn.commit()
     return 0
     
 def main(inpath = "wikiart-master/saved/", outfolderoriginal = "originalsize/", outfolderresized = "resized/", dbname = "database.db", corruptlogfile = "corrupt.txt", cores = mp.cpu_count()):
@@ -127,9 +134,13 @@ def main(inpath = "wikiart-master/saved/", outfolderoriginal = "originalsize/", 
     pathlist = getfrompath(inpath) 
     if len(pathlist) == 0:
         print("WARNING, no images found in", inpath )
+    pathlist_split = np.array_split(pathlist, cores)
 
-    pathlist_split = np.array_split(pathlist,cores)
-    fullres = pool.map(findcorrupt, pathlist_split) # get full operation result, probably not the right usage of a Threadpool, works anyways
+    # requires iterable
+    arguments = []
+    for i in pathlist_split:
+        arguments.append([i, outfolderresized])
+    fullres = pool.map(findcorruptresizeandcopy, arguments) # get full operation result, probably not the right usage of a Threadpool, works anyways
 
     # because map() returns a split list, the results have to be assembled into one list
     validimagepaths = []
@@ -140,22 +151,9 @@ def main(inpath = "wikiart-master/saved/", outfolderoriginal = "originalsize/", 
         for corrupt in threadres[1]:
             corruptimages.append(corrupt)
 
-    with open(corruptlogfile, 'wb') as f: 
-        pickle.dump(corruptimages, f) 
-
     # 2. all valid images are copied to a folder
     print("originalsize copy process to folder (singlethreaded)")
     copytofolder(validimagepaths, outfolderoriginal)
-
-    # 3. All valid images are resized and copied to another folder
-    print("resized copy process to folder (multithreaded)")
-    validimagepaths_split = np.array_split(validimagepaths, cores)
-
-    # map() requires iterables
-    arguments = []
-    for i in validimagepaths_split:
-        arguments.append([i, outfolderresized])
-    pool.map(resizeandcopy, arguments)
 
     # 4. All invalid images are removed from the Database
     # 4.1 All invalid images are logged to a file for removal in case of recreating the database
@@ -164,4 +162,3 @@ def main(inpath = "wikiart-master/saved/", outfolderoriginal = "originalsize/", 
 
 if __name__ == "__main__":
     plac.call(main)
-    # main()
