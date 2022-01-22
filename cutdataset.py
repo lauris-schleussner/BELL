@@ -1,4 +1,5 @@
 '''adjust dataset so that every class has the same number of images. Images are picked randomly from bigger classes'''
+'''is can also be set which classes should be used (have the "used" flag set)'''
 
 from PIL import Image
 import os
@@ -6,21 +7,37 @@ from tqdm import tqdm
 import sqlite3
 import numpy as np
 
-DBPATH = "database.db"
 
-# connect
-conn = sqlite3.connect(DBPATH)
+conn = sqlite3.connect("database.db")
 c = conn.cursor()
 
+'''
+set used flags for styles again, this time correctly
+'''
+c.execute("SELECT id FROM artworks")
+ids = c.fetchall()
+relevantstyles = ["Impressionism", "Realism", "Romanticism", "Expressionism","Art_Nouveau_(Modern)"]
+
+for id in tqdm(ids):
+    c.execute("SELECT style FROM artworks where id = '" + str(id[0]) + "'")
+    style = c.fetchall()[0][0]
+    if style in relevantstyles:
+        c.execute("UPDATE artworks SET used = True WHERE id = '" + str(id[0]) + "'")
+    else:
+        c.execute("UPDATE artworks SET used = False WHERE id = '" + str(id[0]) + "'")
+
+'''
+adjust class size
+'''
+
 # get list of all unique styles returns list of tupels with one datapair each
-c.execute("SELECT DISTINCT style FROM artworks")
+c.execute("SELECT DISTINCT style FROM artworks WHERE used = True")
 res = c.fetchall()
 
 # convert list of tupels to clean list of strings
 classlist = []
 for i in res:
         classlist.append(i[0])
-
 
 # filter out all classes under threshold
 orderlist = [] # ["style", "number of images"]
@@ -29,15 +46,10 @@ for style in classlist:
     amount = c.fetchone() 
     orderlist.append([style, amount[0]])
 
-
 # sort result list by number of images each genre has
 orderlist = sorted(orderlist, key=lambda l:l[1], reverse=True)
 
-
-
 # determine amount of images in "smallest" style
-# = smallest possible class size as each class must have the same size
-# if smallest possible class size is surpassed, IMGPERCLASS is set to the max possible amount
 minclasssize = orderlist[-1][1]
 print("images per class:", minclasssize)
 
@@ -49,7 +61,7 @@ for classname in classlist:
     c.execute(querry)
     res += c.fetchall()
 
-# clean res
+# clean up list of all images that were selected
 selectidlist = []
 for id in res:
     selectidlist.append(id[0])
@@ -70,18 +82,11 @@ deleteids = np.setdiff1d(fullidlist, selectidlist)
 
 print("full", len(fullidlist))
 print("selected", len(selectidlist))
-print("delete", len(deleteids))
+print("set unused", len(deleteids))
 
 for id in tqdm(deleteids):
-    querry = c.execute("DELETE FROM artworks WHERE id = '" + str(id) + "'")
+    c.execute("UPDATE artworks SET used = false WHERE id = '" + str(id) + "'")
     res = c.fetchall()
 
 conn.commit()
 conn.close()
-
-conn = sqlite3.connect(DBPATH)
-c = conn.cursor()
-
-querry = c.execute("SELECT id FROM artorks")
-res = c.fetchall()
-print(len(res))
