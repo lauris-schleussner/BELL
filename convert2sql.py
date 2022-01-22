@@ -120,7 +120,7 @@ def fill(DSPATH):
                         galleryName = artwork["galleryName"]
                         description = artwork["description"]
 
-                        relevantstyles = ["Impressionism", "Realism", "Romanticism", "Expressionism" "Art_Nouveau_(Modern)"]
+                        relevantstyles = ["Impressionism", "Realism", "Romanticism", "Expressionism", "Art_Nouveau_(Modern)"]
 
                         # if the style is part of the "relevant ones" and if an image only has one style attribute. the "used" flag is set
                         # images with multiple styles are not stored in the db
