@@ -87,8 +87,12 @@ def resizeandcopy(arguments):
             image = tf.image.resize_with_pad(image, 500, 500)
             tf.keras.utils.save_img(outfolderresized + name, image)
 
+            if not os.path.isfile(outfolderresized + name):
+                print("did not save")
+                raise Exception("file does not exist after saving")
+
         except Exception as e:
-            # logging.exception("corrupt file found during resizing: " + str(imgpath))
+            logging.exception("corrupt file found during resizing: " + str(imgpath))
             corruptimages.append(imgpath)
 
         
@@ -153,7 +157,7 @@ def main(inpath = "wikiart-master/saved/", outfolderoriginal = "originalsize/", 
 
     # 2. all valid images are copied to a folder
     print("originalsize copy process to folder (singlethreaded)")
-    copytofolder(validimagepaths, outfolderoriginal)
+    # copytofolder(validimagepaths, outfolderoriginal)
 
     # 4. All invalid images are removed from the Database
     # 4.1 All invalid images are logged to a file for removal in case of recreating the database

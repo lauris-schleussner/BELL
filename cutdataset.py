@@ -1,6 +1,6 @@
 '''adjust dataset so that every class has the same number of images. Images are picked randomly from bigger classes'''
 '''is can also be set which classes should be used (have the "used" flag set)'''
-
+'''missing images are also removed'''
 from PIL import Image
 import os
 from tqdm import tqdm
@@ -87,6 +87,20 @@ print("set unused", len(deleteids))
 for id in tqdm(deleteids):
     c.execute("UPDATE artworks SET used = false WHERE id = '" + str(id) + "'")
     res = c.fetchall()
+
+conn.commit()
+
+c.execute("SELECT filename style from artworks WHERE used = True")
+#c.execute("SELECT * FROM artworks where style = 'Expressionism'")
+res = c.fetchall()
+list = []
+for i in res:
+    list.append(i[0])
+
+
+for p in tqdm(list):
+    if not os.path.isfile("resized/" + str(p)) or not os.path.isfile("resized/" + str(p)):
+        c.execute("UPDATE artworks SET used = false WHERE filename = '" + str(p) + "'")
 
 conn.commit()
 conn.close()
