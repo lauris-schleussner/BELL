@@ -1,11 +1,12 @@
 # takes in the folder location of the "saved" folder from the original download
-# turns it into 3 folders:
+# turns it into 2 folders:
 #       - originalsize
 #       - resized
-# both folders contain cleaned up versions of the dataset in only one folder
+# both folders contain cleaned up versions of the dataset, compressed into a single 1d folder
 # same as clean.py but with multiprocessing
-# would have been smarter to not use Threadpooling, still works
-# uses max number of cores by default
+# TODO would have been smarter to not use Threadpooling, still works
+# uses max number of cores by default!
+# there will be a few warnings, but the images are mostly fine
 
 import os
 from bellutils.getfrompath import getfrompath
@@ -14,18 +15,17 @@ from tqdm import tqdm
 import tensorflow as tf
 import plac
 import logging
-import traceback
-logging.basicConfig(filename='errors.log', encoding='utf-8', level=logging.DEBUG,  format='%(asctime)s %(levelname)-8s %(message)s',  datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(filename='errorsfromcleaning.log', encoding='utf-8', level=logging.DEBUG,  format='%(asctime)s %(levelname)-8s %(message)s',  datefmt='%Y-%m-%d %H:%M:%S')
 from shutil import copyfile
 from pathlib import Path
 import sqlite3
 import numpy as np
-import pickle
 
 import multiprocessing as mp
 
 def findcorruptresizeandcopy(arguments):
 
+    # retrieve arguments, because map() wont work with multiple
     pathlist = arguments[0]
     outfolderresized = arguments[1]
 
@@ -33,6 +33,7 @@ def findcorruptresizeandcopy(arguments):
     validimages = []
     for imgpath in tqdm(pathlist):
         
+        # get filename
         name = os.path.basename(imgpath)
         try:
 
@@ -40,7 +41,7 @@ def findcorruptresizeandcopy(arguments):
             image_o = tf.io.read_file(imgpath)
             image_o = tf.io.decode_image(image_o, channels=3)
 
-            # validity check
+            # validity check, try to resize
             image_test = tf.image.convert_image_dtype(image_o, tf.float32)
             image_test = tf.image.resize_with_pad(image_test, 500, 500)
 
@@ -51,7 +52,8 @@ def findcorruptresizeandcopy(arguments):
             validimages.append(imgpath)
 
         except Exception as e:
-            # logging.exception("corrupt file found during file checking: " + str(imgpath))
+            # see why images were corrupted
+            logging.exception("corrupt file found during file checking: " + str(imgpath))
             corruptimages.append(imgpath)
 
     return [validimages, corruptimages]
@@ -65,39 +67,6 @@ def copytofolder(validimagepaths, outfolderoriginal):
 
     return 0
 
-def resizeandcopy(arguments):
-    validimagepaths = arguments[0]
-    outfolderresized = arguments[1]
-
-    # for images that are found to be broken during saving
-    corruptimages = []
-
-    validimages = []
-    for imgpath in tqdm(validimagepaths):
-        
-        # still fails sometimes
-        try:
-
-            name = os.path.basename(imgpath)
-            
-            # resize file ans save to output folder
-            image = tf.io.read_file(imgpath)
-            image = tf.io.decode_image(image, channels=3)
-            image = tf.image.convert_image_dtype(image, tf.float32)
-            image = tf.image.resize_with_pad(image, 500, 500)
-            tf.keras.utils.save_img(outfolderresized + name, image)
-
-            if not os.path.isfile(outfolderresized + name):
-                print("did not save")
-                raise Exception("file does not exist after saving")
-
-        except Exception as e:
-            logging.exception("corrupt file found during resizing: " + str(imgpath))
-            corruptimages.append(imgpath)
-
-        
-    return corruptimages
-
 def removefromdb(corruptimages, dbname):
 
     conn = sqlite3.connect(dbname)
@@ -105,23 +74,21 @@ def removefromdb(corruptimages, dbname):
 
     # get id of the corrupt image from filepath
     for filename in tqdm(corruptimages):
-        print(filename)
         p = Path(filename)
         id = p.stem
-        print(id)
 
         c.execute("UPDATE artworks SET corrupt = True WHERE imgid = '" + id + "'")
 
     conn.commit()
+    
     return 0
     
 def main(inpath = "wikiart-master/saved/", outfolderoriginal = "originalsize/", outfolderresized = "resized/", dbname = "database.db", corruptlogfile = "corrupt.txt", cores = mp.cpu_count()):
 
-    # -1 init multiprocessing
+    # 0 init multiprocessing and create relevant directories or dependancy code fails
     print("number of cores used:" , cores)
     pool = mp.Pool(cores)
 
-    # 0. create relevant directories or dependancy code fails
     try:
         os.mkdir(outfolderresized)
         os.mkdir(outfolderoriginal)
@@ -157,10 +124,9 @@ def main(inpath = "wikiart-master/saved/", outfolderoriginal = "originalsize/", 
 
     # 2. all valid images are copied to a folder
     print("originalsize copy process to folder (singlethreaded)")
-    # copytofolder(validimagepaths, outfolderoriginal)
+    copytofolder(validimagepaths, outfolderoriginal)
 
-    # 4. All invalid images are removed from the Database
-    # 4.1 All invalid images are logged to a file for removal in case of recreating the database
+    # 3. All invalid images are removed from the Database
     print("removing from database (singlethreaded)")
     removefromdb(corruptimages, dbname)
 
