@@ -40,7 +40,10 @@ def create():
                 galleryName text,
                 description text,
                 corrupt bool,
-                used bool
+                used bool, 
+                train bool,
+                test bool,
+                validation bool
                 )""")
 
 def fill(DSPATH):
@@ -122,7 +125,7 @@ def fill(DSPATH):
 
                         relevantstyles = ["Impressionism", "Realism", "Romanticism", "Expressionism", "Art_Nouveau_(Modern)"]
 
-                        # if the style is part of the "relevant ones" and if an image only has one style attribute. the "used" flag is set
+                        # if the style is part of the "relevant ones" and if an image only has one style attribute. the "train" flag is set
                         # images with multiple styles are not stored in the db
                         if len(style) == 1:
                             if str(style[0]) in relevantstyles:
@@ -134,7 +137,12 @@ def fill(DSPATH):
                         # corrupt flag is not set by default as it is set later in the cleaning process
                         corrupt = False
 
-                        createrow(imgid, artworktitle, artistName, filename, path, year, link, location, genre, style[0], galleryName, description, corrupt, used)      
+                        # why not
+                        train = False
+                        test = False
+                        validation = False
+
+                        createrow(imgid, artworktitle, artistName, filename, path, year, link, location, genre, style[0], galleryName, description, corrupt, used, train, test, validation)      
                         
                         '''
                         # create new row for every style that an image has
@@ -156,10 +164,10 @@ def fill(DSPATH):
     
 
 # create a row of the database # TODO ugly
-def createrow(imgid, artworktitle, artistName, filename, path, year, link, location, genre, singlestyle, galleryName, description, corrupt, used):
+def createrow(imgid, artworktitle, artistName, filename, path, year, link, location, genre, singlestyle, galleryName, description, corrupt, used, train, test, validation):
 
-    sql = "INSERT INTO artworks (imgid, title, artistName, filename, path, year, link, location, genre, style, galleryName, description, corrupt, used) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-    val = [(imgid, artworktitle, artistName, filename, year, link, path, location, genre, singlestyle, galleryName, description, corrupt, used)]
+    sql = "INSERT INTO artworks (imgid, title, artistName, filename, path, year, link, location, genre, style, galleryName, description, corrupt,used,  train, test, validation) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    val = [(imgid, artworktitle, artistName, filename, year, link, path, location, genre, singlestyle, galleryName, description, corrupt, used, train, test, validation)]
     c.executemany(sql, val)
 
 def main(DSPATH = "wikiart-master/saved/", DBNAME = "database.db"):
