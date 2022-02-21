@@ -74,18 +74,40 @@ fullidlist = []
 for id in res:
     fullidlist.append(id[0])
 
+# split the dataset 
+# https://stackoverflow.com/questions/49556753/how-to-slice-a-list-into-3-parts-based-on-percentage
+ratio  = [0.8, 0.1, 0.1]
+train_r, val_r, test_r = ratio
+# note we only need to give the first 2 indices to split, the last one it returns the rest of the list or empty
+indicies_for_splitting = [int(len(selectidlist) * train_r), int(len(selectidlist) * (train_r+val_r))]
+train, validation, test = np.split(selectidlist, indicies_for_splitting)
+
 # ids that should be set to "unused" (ids that where not selected because a class is to big)
 # yields the elements in `fullidlist` that are NOT in `selectidlist`
 deleteids = np.setdiff1d(fullidlist, selectidlist)
 
-print("full", len(fullidlist))
-print("selected", len(selectidlist))
-print("set unused", len(deleteids))
+print("Full Dataset lenth: ", len(fullidlist))
+print("Images that will be used: ", len(selectidlist))
+print("Images that will not be used: ", len(deleteids))
+print("___________________________________________________")
+print("Train Dataset:", len(train))
+print("Test Dataset:", len(test))
+print("Validation Dataset:", len(validation))
 
 # update db so each class has the same size
 for id in tqdm(deleteids):
     c.execute("UPDATE artworks SET used = false WHERE id = '" + str(id) + "'")
     res = c.fetchall()
+
+for id in tqdm(train):
+    c.execute("UPDATE artworks SET train = True WHERE id = '" + str(id) + "'")
+
+for id in tqdm(test):
+    c.execute("UPDATE artworks SET test = True WHERE id = '" + str(id) + "'")
+
+for id in tqdm(validation):
+    c.execute("UPDATE artworks SET validation = True WHERE id = '" + str(id) + "'")
+
 
 # save changes
 conn.commit()
