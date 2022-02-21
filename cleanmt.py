@@ -43,7 +43,7 @@ def findcorruptresizeandcopy(arguments):
 
             # validity check, try to resize
             image_test = tf.image.convert_image_dtype(image_o, tf.float32)
-            image_test = tf.image.resize_with_pad(image_test, 500, 500)
+            image_test = tf.image.resize_with_pad(image_test, 244, 244)
 
             # save
             tf.keras.utils.save_img(outfolderresized + name, image_test)
