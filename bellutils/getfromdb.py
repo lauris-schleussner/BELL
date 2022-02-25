@@ -7,7 +7,7 @@ def getfromdb(DBNAME):
 
     conn = sqlite3.connect(path)
     c = conn.cursor()
-    c.execute("SELECT path FROM artworks")
+    c.execute("SELECT filename FROM artworks")
     res = c.fetchall()
     
     # clean up
@@ -18,5 +18,5 @@ def getfromdb(DBNAME):
     return returnlist
 
 if __name__ == "__main__":
-    DBNAME = "WikiartDatasetMultiStyles.db"
+    DBNAME = "database.db"
     getfromdb(DBNAME)
