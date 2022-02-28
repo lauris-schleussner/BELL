@@ -3,7 +3,8 @@
 import glob
 
 def getfrompath(path):
-    imglist = glob.glob(path + "\**\*.jpg", recursive=True)
+    # imglist = glob.glob(path + "\**\*.jpg", recursive=True)
+    imglist = glob.glob(path + "/**/*.jpg", recursive=True)
     return imglist
 
 
