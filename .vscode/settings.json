@@ -1,4 +1,13 @@
 {
     "python.linting.enabled": false,
-    "python.analysis.autoImportCompletions": false
+    "python.analysis.autoImportCompletions": false,
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/*/**": true,
+        "**/resized/**": true,
+        "**/models/**": true,
+        "**/wikiart-master/saved/*/**": true,
+        "**/wikiart-master/saved/**": true
+      }
 }

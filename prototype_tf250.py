@@ -12,7 +12,7 @@ import sqlite3
 
 # network parameter settings
 BATCHSIZE = 32
-EPOCHS = 100
+EPOCHS = 150
 LEARNINGRATE = 0.001 # default Adam learning rate
 FULLSIZE = False # True: Images are taken from the "originalsize/" folder and rescaled during execution. False: pre-scaled versions are used. There should not be a difference apart from performance
 IMGSIZE = 100 # images are rescaled to a square, size in px
@@ -150,19 +150,29 @@ def main():
     print("val_ds", val_ds.cardinality())
     print("test_ds", test_ds.cardinality())
 
-    dataset = train_ds
+    # dataset = train_ds
+    ds = train_ds.shuffle(buffer_size=len_train)
+    #ds = dataset.shuffle(buffer_size=IMAGENUMBER)
 
     # Setting a shuffle buffer size as large as the dataset ensures that the data is
     # completely shuffled.
-    ds = dataset.shuffle(buffer_size=IMAGENUMBER)
-    ds = ds.repeat()
+    
+    # ds = ds.repeat()
     ds = ds.batch(BATCHSIZE)
     # `prefetch` lets the dataset fetch batches in the background while the model is training.
     ds = ds.prefetch(buffer_size=AUTOTUNE)
 
-    ds = dataset.apply(tf.data.experimental.shuffle_and_repeat(buffer_size=IMAGENUMBER))
-    ds = ds.batch(BATCHSIZE)
-    ds = ds.prefetch(buffer_size=AUTOTUNE)
+    # ds = dataset.apply(tf.data.experimental.shuffle_and_repeat(buffer_size=IMAGENUMBER))
+    # ds = ds.batch(BATCHSIZE)
+    # ds = ds.prefetch(buffer_size=AUTOTUNE)
+
+
+
+    # prepare val data
+    # val_ds = val_ds.shuffle(buffer_size=len_train)
+    val_ds = val_ds.batch(BATCHSIZE)
+
+
 
     # # for every datapair [filename, label]:
     # def processImage(datapair):
@@ -262,6 +272,9 @@ def main():
     cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                     save_weights_only=True,
                                                     verbose=1)
+    
+    # early stopping
+    es_callback = tf.keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
 
     # LET THE TRAINING COMMENCE!
     # model.fit(
@@ -271,17 +284,18 @@ def main():
     #     # callbacks=[cp_callback, WandbCallback()]
     #     callbacks=[cp_callback]
     # )
-    model.fit(
+    history = model.fit(
         ds,
+        validation_data=val_ds,
         epochs=EPOCHS,
         steps_per_epoch=tf.math.ceil(len_train/BATCHSIZE).numpy(),
-        callbacks=[cp_callback]
+        callbacks=[cp_callback, es_callback]
     )
     # after sucessfull run save model
     model.save(MODELPATH)
 
     # used by confusionmatrix.py so i dont have to implement dynamically getting labels and paths again...
-    return [model, classlist, test_ds]
+    return [model, classlist, test_ds, history]
 
 if __name__ == "__main__":
     # input("to compute confusionmatrix start the other script first, continue regardless? press any key ")
