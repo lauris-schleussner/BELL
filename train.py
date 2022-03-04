@@ -131,5 +131,7 @@ def main():
     # after sucessfull run save model
     model.save(MODELPATH)
 
+    return [model, history]
+
 if __name__ == "__main__":
     main()
