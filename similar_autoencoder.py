@@ -6,7 +6,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 import tensorflow.keras.backend as K
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm
 import pickle
 import pandas as pd
 import os
@@ -89,7 +89,7 @@ autoencoder.compile(loss="mse", optimizer= Adam(learning_rate=1e-3))
 history = autoencoder.fit_generator(
           training_set,
           steps_per_epoch=training_set.n // batch_size,
-          epochs = 1,
+          epochs = 300,
           validation_data=validation_set,
           validation_steps=validation_set.n // batch_size,
           callbacks = [ModelCheckpoint('autoenc/models/image_autoencoder_2.h5', 
@@ -97,6 +97,8 @@ history = autoencoder.fit_generator(
                                        verbose=0, 
                                        save_best_only=True, 
                                        save_weights_only=False)])
+
+autoencoder.summary()
 
 latent_space_model = Model(
                       autoencoder.input, 
