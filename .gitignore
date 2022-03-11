@@ -17,7 +17,6 @@ wikiart-master/LICENSE
 wikiart-master/saved
 logs/
 models/
-*.db
 .vscode/settings.json
 wandb/
 resized_1/
