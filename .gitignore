@@ -9,6 +9,7 @@ resized
 originalsize
 
 trained/
+untrained/
 cpoint/
 .vscode/
 IADataset/

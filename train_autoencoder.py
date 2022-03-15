@@ -1,3 +1,5 @@
+# Autoencoder will train with ALL images!
+
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array, array_to_img
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Flatten, Conv2D, Conv2DTranspose, LeakyReLU, BatchNormalization, Input, Dense, Reshape, Activation
