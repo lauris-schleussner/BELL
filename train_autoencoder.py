@@ -40,6 +40,9 @@ validation_set = train_datagen.flow_from_directory(
      subset = 'validation',
      shuffle=False)
 
+if not os.path.isdir("autoenc/resized"):
+  raise ValueError("No folder found, was the 'resized' folder copied to 'autoenc/resized'?")
+
 # Define the autoencoder
 input_model = Input(shape=(img_height, img_width, channels))
 

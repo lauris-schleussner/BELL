@@ -13,9 +13,11 @@ LEARNINGRATE = 0.001 # default Adam learning rate
 IMGSIZE = 244 # images are rescaled to a square, size in px
 
 # paths
+MODELPATH = "models/"
 DBNAME = "database.db"
 CPPATH = "models/checkpoint.ckpt"
 CPDIR = os.path.dirname(CPPATH)
+
 
 # database
 conn = sqlite3.connect(DBNAME)
@@ -23,7 +25,6 @@ c = conn.cursor()
 
 # Tensorflow Stuff 
 AUTOTUNE = tf.data.AUTOTUNE
-
 
 # return dataset for requested partition (train/val/test)
 def get_datasets(dataset_type):
@@ -58,23 +59,24 @@ def preprocess_image(filename, label):
 
     image = tf.io.read_file("resized/" + filename)
     image = tf.image.decode_jpeg(image, channels=3)
-    # image /= 255 # normalize to [0,1] range
-
-    # special vgg preprocessing
-    image = tf.keras.applications.vgg16.preprocess_input(image)
+    image /= 255 # normalize to [0,1] range
 
     return image, label
 
 
-def main(EPOCHS, pretrained):
+def main(modelname, EPOCHS):
+
+    TRAININGMODELPATH = "./untrained/" + modelname
 
     # get dataset
     train_ds = get_datasets("train")
     val_ds = get_datasets("validation")
+    test_ds = get_datasets("test")
 
     # load and preprocess images
     train_ds = train_ds.map(preprocess_image)
     val_ds = val_ds.map(preprocess_image)
+    test_ds = test_ds.map(preprocess_image)
 
 
     # shuffle datasets
@@ -84,6 +86,7 @@ def main(EPOCHS, pretrained):
     # info
     print("train_ds", train_ds.cardinality())
     print("val_ds", val_ds.cardinality())
+    print("test_ds", test_ds.cardinality())
 
     train_ds = train_ds.batch(BATCHSIZE)
     val_ds = val_ds.batch(BATCHSIZE)
@@ -91,9 +94,36 @@ def main(EPOCHS, pretrained):
     train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
     val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
 
-    model = tf.keras.applications.vgg16.VGG16(include_top = True, weights = pretrained, input_shape = (IMGSIZE, IMGSIZE, 3), pooling = max, classes = 5)
-    # https://www.tensorflow.org/api_docs/python/tf/keras/applications/vgg16/
+    # load model from file created by "createmodels.py"
+    # model = tf.keras.models.load_model(MODELPATH)
+
     
+    # alexnet
+    model = keras.Sequential([
+        keras.layers.Conv2D(96, (11,11),  strides = 4, padding = "same", activation = "relu", input_shape = (244,244,4)),
+        # keras.layers.Lambda(tf.nn.local_response_normalization),
+        keras.layers.MaxPooling2D((3, 3), strides=2),
+
+        keras.layers.Conv2D(256, (5,5), strides = 1, padding = "same", activation = "relu"),
+        # keras.layers.Lambda(tf.nn.local_response_normalization),
+        keras.layers.MaxPooling2D((3, 3), strides=2),
+
+        keras.layers.Conv2D(384, (3,3), strides = 1, padding = "same", activation = "relu"),
+
+        keras.layers.Conv2D(384, (3,3), strides = 1, padding='same', activation="relu"),
+
+        keras.layers.Conv2D(256, (3,3), strides = 1, padding='same', activation="relu"),
+        keras.layers.MaxPooling2D((3, 3), strides=2),
+
+        keras.layers.Flatten(),
+
+        keras.layers.Dense(4096, activation = "relu"),
+        keras.layers.Dropout(0.5),
+        keras.layers.Dense(4096, activation = "relu"),
+        keras.layers.Dropout(0.5),
+        keras.layers.Dense(5, activation = "relu")
+    ])
+
     model.summary()
 
     # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
@@ -116,8 +146,12 @@ def main(EPOCHS, pretrained):
         epochs=EPOCHS,
         callbacks=[cp_callback, es_callback]
     )
+    # after sucessfull run save model
+    model.save(MODELPATH)
 
-    return [model, history, train_ds]
+    print("succesfully trained and saved the model ", modelname)
+
+    return [model, history, test_ds]
 
 if __name__ == "__main__":
     main()

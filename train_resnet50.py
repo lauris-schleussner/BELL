@@ -60,11 +60,10 @@ def preprocess_image(filename, label):
     image = tf.image.decode_jpeg(image, channels=3)
     # image /= 255 # normalize to [0,1] range
 
-    # special vgg preprocessing
-    image = tf.keras.applications.vgg16.preprocess_input(image)
+    # special resnet preprocessing
+    image = tf.keras.applications.resnet.preprocess_input(image)
 
     return image, label
-
 
 def main(EPOCHS, pretrained):
 
@@ -91,9 +90,8 @@ def main(EPOCHS, pretrained):
     train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
     val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
 
-    model = tf.keras.applications.vgg16.VGG16(include_top = True, weights = pretrained, input_shape = (IMGSIZE, IMGSIZE, 3), pooling = max, classes = 5)
-    # https://www.tensorflow.org/api_docs/python/tf/keras/applications/vgg16/
-    
+    model = tf.keras.applications.resnet50.ResNet50(include_top=True, weights=pretrained, input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max, classes=5)
+
     model.summary()
 
     # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
@@ -117,7 +115,8 @@ def main(EPOCHS, pretrained):
         callbacks=[cp_callback, es_callback]
     )
 
+
     return [model, history, train_ds]
 
 if __name__ == "__main__":
-    main()
+    main(1, None)
