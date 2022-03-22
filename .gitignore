@@ -8,6 +8,7 @@ __pycache__/
 resized
 originalsize
 
+autoenc/resized
 trained/
 untrained/
 cpoint/

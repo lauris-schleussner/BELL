@@ -2,10 +2,21 @@ import train_cnn
 import train_vgg16
 import cfm_history
 import train_alexnet
-import train_autoencoder
+# import train_autoencoder
 import train_resnet50
 import train_xception
 
+import os
+import distutils.dir_util
+
+
+
+if not os.path.isdir("autoenc/resized"):
+    print("copying './resized' to './autoenc/resized' ")
+    distutils.dir_util.copy_tree("./resized", "./autoenc/resized")
+    print("copy done")
+
+quit()
 
 # first network
 print("training cnn1")
@@ -40,5 +51,8 @@ print("training xception with pretrained weigths")
 cfm_history.main(train_xception.main(EPOCHS = 1, pretrained = "imagenet"), plottitle="Xception pretrained")
 
 # autoencoder, no visuals
+
+
+
 print("training encoder")
 train_autoencoder.main(EPOCHS = 1)
