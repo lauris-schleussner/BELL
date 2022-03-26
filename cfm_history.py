@@ -7,12 +7,18 @@ from tensorflow.keras.models import Sequential, save_model, load_model
 import matplotlib.pyplot as plt
 import pandas as pd
 
-def main(model, history, test_ds, plottitle):
+def main(traindata, plottitle):
+
+    model = traindata[0]
+    history = traindata[1]
+    test_ds = traindata[2]
 
     outfolder = "./visualisations_out/"
 
     # might work with batching
     images, labels = tuple(zip(*test_ds)) 
+
+    # print(tf.shape(images))
 
 
     # build one batch with all test pictures 
@@ -20,14 +26,14 @@ def main(model, history, test_ds, plottitle):
     images = np.array(images)
     labels = np.array(labels)
     labels = labels.flatten()
-    print("labels: ", labels)
+    # print("labels: ", labels)
 
     rawpredictions = model.predict(images)
 
     argmaxpredictions = tf.argmax(rawpredictions, axis=-1)
     argmaxpredictions = argmaxpredictions.numpy()
     argmaxpredictions = argmaxpredictions.flatten()
-    print("argmaxpredictions:", argmaxpredictions)
+    # print("argmaxpredictions:", argmaxpredictions)
 
     weights = []
 
@@ -38,7 +44,7 @@ def main(model, history, test_ds, plottitle):
 
 
     confusion = tf.math.confusion_matrix(labels=labels, predictions=argmaxpredictions)
-    print(confusion.shape)
+    # print(confusion.shape)
 
     conf_matrix = confusion.numpy()
     fig, ax = plt.subplots(figsize=(7.5, 7.5))

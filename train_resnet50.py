@@ -70,15 +70,17 @@ def main(EPOCHS, pretrained):
     # get dataset
     train_ds = get_datasets("train")
     val_ds = get_datasets("validation")
-
-    # load and preprocess images
-    train_ds = train_ds.map(preprocess_image)
-    val_ds = val_ds.map(preprocess_image)
-
+    test_ds = get_datasets("test")
 
     # shuffle datasets
     train_ds = train_ds.shuffle(train_ds.cardinality(), reshuffle_each_iteration=True)
     val_ds = val_ds.shuffle(val_ds.cardinality(), reshuffle_each_iteration=True)
+    test_ds = test_ds.shuffle(test_ds.cardinality(), reshuffle_each_iteration=True)
+
+    # load and preprocess images
+    train_ds = train_ds.map(preprocess_image)
+    val_ds = val_ds.map(preprocess_image)
+    test_ds = test_ds.map(preprocess_image)
 
     # info
     print("train_ds", train_ds.cardinality())
@@ -90,9 +92,25 @@ def main(EPOCHS, pretrained):
     train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
     val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
 
-    model = tf.keras.applications.resnet50.ResNet50(include_top=True, weights=pretrained, input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max, classes=5)
+    if pretrained:
+        pretrained_model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights="imagenet", input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max)
+        pretrained_model.trainable = False
 
-    model.summary()
+        inputs = tf.keras.Input(shape = (IMGSIZE, IMGSIZE, 3))
+        x = pretrained_model(inputs, training = False)
+        x = tf.keras.layers.GlobalAveragePooling2D()(x)
+
+        # add dropout and 3 dense layers ontop
+        x = tf.keras.layers.Dropout(0.2)(x)
+        x = tf.keras.layers.Dense(1024)(x)
+        x = tf.keras.layers.Dense(256)(x)
+        outputs = tf.keras.layers.Dense(5)(x)
+
+        model = tf.keras.Model(inputs, outputs)
+
+    else:
+        model = tf.keras.applications.resnet50.ResNet50(include_top=True, weights=None, input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max, classes = 5)
+
 
     # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
     # gradient descent to improve training
@@ -116,7 +134,7 @@ def main(EPOCHS, pretrained):
     )
 
 
-    return [model, history, train_ds]
+    return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(1, None)
+    main(1, True)

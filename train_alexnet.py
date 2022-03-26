@@ -1,7 +1,7 @@
 # TODO implement SSIM, PSNR
 
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # silence Tensorflow
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # silence Tensorflow
 import tensorflow as tf
 # tf.compat.v1.enable_eager_execution()
 from tensorflow import keras
@@ -64,24 +64,22 @@ def preprocess_image(filename, label):
     return image, label
 
 
-def main(modelname, EPOCHS):
-
-    TRAININGMODELPATH = "./untrained/" + modelname
+def main(EPOCHS):
 
     # get dataset
     train_ds = get_datasets("train")
     val_ds = get_datasets("validation")
     test_ds = get_datasets("test")
 
+    # shuffle
+    train_ds = train_ds.shuffle(train_ds.cardinality(), reshuffle_each_iteration=True)
+    val_ds = val_ds.shuffle(val_ds.cardinality(), reshuffle_each_iteration=True)
+    test_ds = test_ds.shuffle(test_ds.cardinality(), reshuffle_each_iteration=True)
+
     # load and preprocess images
     train_ds = train_ds.map(preprocess_image)
     val_ds = val_ds.map(preprocess_image)
     test_ds = test_ds.map(preprocess_image)
-
-
-    # shuffle datasets
-    train_ds = train_ds.shuffle(train_ds.cardinality(), reshuffle_each_iteration=True)
-    val_ds = val_ds.shuffle(val_ds.cardinality(), reshuffle_each_iteration=True)
 
     # info
     print("train_ds", train_ds.cardinality())
@@ -93,14 +91,10 @@ def main(modelname, EPOCHS):
 
     train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
     val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
-
-    # load model from file created by "createmodels.py"
-    # model = tf.keras.models.load_model(MODELPATH)
-
     
     # alexnet
     model = keras.Sequential([
-        keras.layers.Conv2D(96, (11,11),  strides = 4, padding = "same", activation = "relu", input_shape = (244,244,4)),
+        keras.layers.Conv2D(96, (11,11),  strides = 4, padding = "same", activation = "relu", input_shape = (244,244,3)),
         # keras.layers.Lambda(tf.nn.local_response_normalization),
         keras.layers.MaxPooling2D((3, 3), strides=2),
 
@@ -123,8 +117,6 @@ def main(modelname, EPOCHS):
         keras.layers.Dropout(0.5),
         keras.layers.Dense(5, activation = "relu")
     ])
-
-    model.summary()
 
     # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
     # gradient descent to improve training
@@ -149,9 +141,9 @@ def main(modelname, EPOCHS):
     # after sucessfull run save model
     model.save(MODELPATH)
 
-    print("succesfully trained and saved the model ", modelname)
+    print("succesfully trained and saved the model ")
 
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main()
+    main(EPOCHS = 1)

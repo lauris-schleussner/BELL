@@ -63,22 +63,22 @@ def preprocess_image(filename, label):
     return image, label
 
 
-def main(modelname, EPOCHS):
+def main(EPOCHS):
 
     # get dataset
     train_ds = get_datasets("train")
     val_ds = get_datasets("validation")
     test_ds = get_datasets("test")
 
+    # shuffle datasets
+    train_ds = train_ds.shuffle(train_ds.cardinality(), reshuffle_each_iteration=True)
+    val_ds = val_ds.shuffle(val_ds.cardinality(), reshuffle_each_iteration=True)
+    test_ds = test_ds.shuffle(test_ds.cardinality(), reshuffle_each_iteration=True)
+
     # load and preprocess images
     train_ds = train_ds.map(preprocess_image)
     val_ds = val_ds.map(preprocess_image)
     test_ds = test_ds.map(preprocess_image)
-
-
-    # shuffle datasets
-    train_ds = train_ds.shuffle(train_ds.cardinality(), reshuffle_each_iteration=True)
-    val_ds = val_ds.shuffle(val_ds.cardinality(), reshuffle_each_iteration=True)
 
     # info
     print("train_ds", train_ds.cardinality())
@@ -133,9 +133,9 @@ def main(modelname, EPOCHS):
         callbacks=[cp_callback, es_callback]
     )
 
-    print("succesfully trained", modelname)
+    print("succesfully trained")
 
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main()
+    main(EPOCHS=1)

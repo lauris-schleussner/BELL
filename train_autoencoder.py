@@ -13,7 +13,7 @@ import os
 
 # https://www.analyticsvidhya.com/blog/2021/01/querying-similar-images-with-tensorflow/
 
-def main():
+def main(EPOCHS):
 
   # Load images
   img_height = 244
@@ -94,7 +94,7 @@ def main():
   history = autoencoder.fit_generator(
             training_set,
             steps_per_epoch=training_set.n // batch_size,
-            epochs = 300,
+            epochs = EPOCHS,
             validation_data=validation_set,
             validation_steps=validation_set.n // batch_size,
             callbacks = [ModelCheckpoint('autoenc/models/image_autoencoder_2.h5', 
