@@ -10,7 +10,7 @@ import sqlite3
 # network parameter settings
 BATCHSIZE = 32
 LEARNINGRATE = 0.001 # default Adam learning rate
-IMGSIZE = 244 # images are rescaled to a square, size in px
+IMGSIZE = 100 # 244 # images are rescaled to a square, size in px
 
 # paths
 DBNAME = "database.db"
@@ -137,4 +137,4 @@ def main(EPOCHS, pretrained):
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(1, True)
+    main(10, True)

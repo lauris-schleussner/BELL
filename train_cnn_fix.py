@@ -6,6 +6,11 @@ import tensorflow as tf
 # tf.compat.v1.enable_eager_execution()
 from tensorflow import keras
 import sqlite3
+import pandas as pd
+
+# Test number of epochs
+N_TEST_EPOCHS = 50
+PATIENCE = 25
 
 # network parameter settings
 BATCHSIZE = 32
@@ -53,6 +58,55 @@ def get_datasets(dataset_type):
     return dataset
 
 
+def get_fix_datasets():
+
+    # select list of filenames and styles for the relevant dataset partition
+    labels = c.execute("SELECT style FROM artworks WHERE used = True").fetchall()
+    filenames = c.execute("SELECT filename FROM artworks WHERE used = True").fetchall()
+
+    data_df = pd.DataFrame()
+    data_df['filename'] = filenames
+    data_df['label'] = labels
+
+    data_df = data_df.sample(frac=1)
+    data_df = data_df.sample(frac=1)
+
+    n_obs = len(labels)
+    split = int(n_obs * .95)
+    train_df = data_df.iloc[:split].copy()
+    val_df = data_df.iloc[split:].copy()
+
+    print("Train label dist:")
+    print(train_df['label'].value_counts())
+    print("Val label dist:")
+    print(val_df['label'].value_counts())
+
+
+    def tfdataset(filenames, labels):
+        # convert string label to its index
+        all_labels = ["Impressionism", "Realism", "Romanticism", "Expressionism", "Art_Nouveau_(Modern)"]
+        
+        # create lookup dict for all labels
+        label_to_index = dict((name, index) for index, name in enumerate(all_labels))
+
+        # use dict to map each style to its index NOTE: all_filenames is needed because filenames is a list in that strange sql return format [(label,), (label2,)]
+        all_index = []
+        all_filenames = []
+        for filepath, label in zip(filenames, labels):
+            all_index.append(label_to_index[label[0]])
+            all_filenames.append(filepath[0])
+
+        # create dataset
+        dataset = tf.data.Dataset.from_tensor_slices((all_filenames, all_index))
+
+        return dataset
+
+    train_dataset = tfdataset(train_df['filename'].to_list(), train_df['label'].to_list())
+    val_dataset = tfdataset(val_df['filename'].to_list(), val_df['label'].to_list())
+
+    return train_dataset, val_dataset
+
+
 # open and read image. This function is mapped to every dataset row
 def preprocess_image(filename, label):
 
@@ -65,25 +119,29 @@ def preprocess_image(filename, label):
 
 def main(EPOCHS):
 
-    # get dataset
-    train_ds = get_datasets("train")
-    val_ds = get_datasets("validation")
-    test_ds = get_datasets("test")
+    # # get dataset
+    # train_ds = get_datasets("train")
+    # val_ds = get_datasets("validation")
+    # test_ds = get_datasets("test")
 
-    # shuffle datasets
+    # fix get data
+    train_ds, val_ds = get_fix_datasets()
+
+    # # shuffle datasets
     train_ds = train_ds.shuffle(train_ds.cardinality(), reshuffle_each_iteration=True)
     val_ds = val_ds.shuffle(val_ds.cardinality(), reshuffle_each_iteration=True)
-    test_ds = test_ds.shuffle(test_ds.cardinality(), reshuffle_each_iteration=True)
+    # test_ds = test_ds.shuffle(test_ds.cardinality(), reshuffle_each_iteration=True)
+    
 
     # load and preprocess images
     train_ds = train_ds.map(preprocess_image)
     val_ds = val_ds.map(preprocess_image)
-    test_ds = test_ds.map(preprocess_image)
+    # test_ds = test_ds.map(preprocess_image)
 
     # info
     print("train_ds", train_ds.cardinality())
     print("val_ds", val_ds.cardinality())
-    print("test_ds", test_ds.cardinality())
+    # print("test_ds", test_ds.cardinality())
 
     train_ds = train_ds.batch(BATCHSIZE)
     val_ds = val_ds.batch(BATCHSIZE)
@@ -97,9 +155,11 @@ def main(EPOCHS):
         tf.keras.layers.Conv2D(64, 5, activation="relu", padding='same', input_shape = (IMGSIZE, IMGSIZE, 3)),
         tf.keras.layers.MaxPooling2D(2),
         tf.keras.layers.Conv2D(128, 3, activation="relu", padding='same'),
+        
         tf.keras.layers.Conv2D(128, 3, activation="relu", padding='same'),
         tf.keras.layers.MaxPooling2D(2),
         tf.keras.layers.Conv2D(256, 3, activation="relu", padding='same'),
+        
         tf.keras.layers.Conv2D(256, 3, activation="relu", padding='same'),
         tf.keras.layers.MaxPooling2D(2),
         tf.keras.layers.Flatten(),
@@ -124,7 +184,7 @@ def main(EPOCHS):
 
     # callbacks that are triggered during training, create checkpoints
     cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=CPPATH, save_weights_only=True, verbose=1)
-    es_callback = tf.keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
+    es_callback = tf.keras.callbacks.EarlyStopping(patience=PATIENCE, restore_best_weights=True)
 
     history = model.fit(
         train_ds,
@@ -135,7 +195,9 @@ def main(EPOCHS):
 
     print("succesfully trained")
 
-    return [model, history, test_ds]
+    # return [model, history, test_ds]
+
+    return [model, history]
 
 if __name__ == "__main__":
-    main(EPOCHS=100)
+    main(EPOCHS=N_TEST_EPOCHS)
