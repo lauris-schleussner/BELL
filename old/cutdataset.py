@@ -15,6 +15,7 @@ relevantstyles = ["Impressionism", "Realism", "Romanticism", "Expressionism","Ar
 conn = sqlite3.connect("database.db")
 c = conn.cursor()
 
+
 # set used flags for styles again, this time correctly
 c.execute("SELECT id FROM artworks")
 ids = c.fetchall()
@@ -64,6 +65,9 @@ for classname in classlist:
 selectidlist = []
 for id in res:
     selectidlist.append(id[0])
+
+import random
+random.shuffle(selectidlist)
 
 # select full list
 querry = c.execute("SELECT id FROM artworks")
