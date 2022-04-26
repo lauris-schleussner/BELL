@@ -1,38 +1,40 @@
 import sqlite3
+import numpy
 
-DBNAME = "WikiartDataset.db"
+
+DBNAME = "database.db"
 conn = sqlite3.connect(DBNAME)
 c = conn.cursor()
 
-c.execute("SELECT DISTINCT style FROM artworks")
+c.execute("SELECT style FROM artworks WHERE validation = True")
 res = c.fetchall()
-
-
-# obtain all classnmaes
-classnames = []
 for i in res:
-    for j in list(i):
-        try: # error with "NONE"
-            jlist = j.split(",")
-        except:
-            pass
-        for k in jlist:
-            if k not in classnames:
-                classnames.append(k)
+    pass
+    print(i)
 
 
-# filter out all classes under threshold, takes eternity
-for genre in classnames:
-    try:
-        c.execute("SELECT COUNT(genre) FROM artworks WHERE style LIKE '%" + genre + "%'")
-        res = c.fetchone()
-        print(res[0])
-        if len(res)>= 1000:
-            print(genre, len(res))
-            classnames.remove(genre)
-    except Exception as e:
-        print(e)
-        pass
+# calculate mixedness
 
-print(len(classnames))
 
+import random
+# random.shuffle(res)
+
+
+
+# calculate the sum of the lengths of all streaks against the length of the dataset
+# around 0.9 is good
+# under 0.7 is bad
+MINLENGTH = 2
+counter = 0
+li = ["A", "B", "C", "D"]
+for i in res:
+    a = i[0]
+    if li[-1] == a:
+        li.append(a)
+    else:
+        max = len(li)
+        if max <= MINLENGTH:
+            counter += max
+        li = [a]
+
+print(counter/len(res))
