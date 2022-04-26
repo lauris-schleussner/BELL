@@ -47,7 +47,7 @@ def findcorruptresizeandcopy(arguments):
             image_test = tf.image.resize_with_pad(image_test, 244, 244)
 
             # save
-            tf.keras.utils.save_img(outfolderresized + name, image_test)
+            # tf.keras.utils.save_img(outfolderresized + name, image_test)
 
             # if passes as valid add to list
             validimages.append(imgpath)
@@ -82,16 +82,19 @@ def all_findcorruptresizeandcopy(pathlist, outfolderresized):
             image_test = tf.image.convert_image_dtype(image_o, tf.float32)
             image_test = tf.image.resize_with_pad(image_test, 100, 100)
 
+            del image_test
+            del image_o
+
             # save
             # https://www.tensorflow.org/versions/r2.5/api_docs/python/tf/keras/preprocessing/image/save_img
             # tf.keras.utils.save_img(outfolderresized + name, image_test)
-            tf.keras.preprocessing.image.save_img(outfolderresized + name, image_test)
+            # tf.keras.preprocessing.image.save_img(outfolderresized + name, image_test)
 
             # if passes as valid add to list
             validimages.append(imgpath)
 
         except Exception as e:
-            print(e)
+            print("exception", e)
             # see why images were corrupted
             logging.exception("corrupt file found during file checking: " + str(imgpath))
             corruptimages.append(imgpath)
@@ -125,14 +128,14 @@ def removefromdb(corruptimages, dbname):
     return 0
     
 ## def main(inpath = "wikiart-master/saved/", outfolderoriginal = "originalsize/", outfolderresized = "resized/", dbname = "database.db", corruptlogfile = "corrupt.txt", cores = mp.cpu_count()-10):
-def main(inpath = "/DMWdatapool/ycampbell/gitsrc/BELL/wikiart-master/saved/", 
-                    outfolderoriginal = "/DMWdatapool/ycampbell/gitsrc/BELL/originalsize/", 
-                    outfolderresized = "/DMWdatapool/ycampbell/gitsrc/BELL/resized/", 
-                    dbname = "database.db", corruptlogfile = "corrupt.txt", cores = mp.cpu_count()-10):
+def main(inpath = "wikiart-master/saved/", 
+                    outfolderoriginal = "originalsize/", 
+                    outfolderresized = "resized/", 
+                    dbname = "database.db", corruptlogfile = "corrupt.txt", cores = 10):
 
     # 0 init multiprocessing and create relevant directories or dependancy code fails
     print("number of cores used:" , cores)
-    # pool = mp.Pool(cores)
+    pool = mp.Pool(cores)
 
     try:
         os.mkdir(outfolderresized)
@@ -151,30 +154,28 @@ def main(inpath = "/DMWdatapool/ycampbell/gitsrc/BELL/wikiart-master/saved/",
     if len(pathlist) == 0:
         print("WARNING, no images found in", inpath )
 
-    valid_images, corrupt_images = all_findcorruptresizeandcopy(pathlist=pathlist, outfolderresized=outfolderresized)
+    # valid_images, corrupt_images = all_findcorruptresizeandcopy(pathlist=pathlist, outfolderresized=outfolderresized)
     
-    # pathlist_split = np.array_split(pathlist, cores)
+    pathlist_split = np.array_split(pathlist, cores)
 
     # # requires iterable
-    # arguments = []
-    # for i in pathlist_split:
-    #     arguments.append([i, outfolderresized])
-    # fullres = pool.map(findcorruptresizeandcopy, arguments) # get full operation result, probably not the right usage of a Threadpool, works anyways
+    arguments = []
+    for i in pathlist_split:
+        arguments.append([i, outfolderresized])
+    fullres = pool.map(findcorruptresizeandcopy, arguments) # get full operation result, probably not the right usage of a Threadpool, works anyways
 
-    # # because map() returns a split list, the results have to be assembled into one list
-    # validimagepaths = []
-    # corruptimages = []
-    # for threadres in fullres:
-    #     for valid in threadres[0]:
-    #         validimagepaths.append(valid)
-    #     for corrupt in threadres[1]:
-    #         corruptimages.append(corrupt)
+    # because map() returns a split list, the results have to be assembled into one list
+    validimagepaths = []
+    corruptimages = []
+    for threadres in fullres:
+        for valid in threadres[0]:
+            validimagepaths.append(valid)
+        for corrupt in threadres[1]:
+            corruptimages.append(corrupt)
 
     # # 2. all valid images are copied to a folder
     # print("originalsize copy process to folder (singlethreaded)")
-    # copytofolder(validimagepaths, outfolderoriginal)
-
-    corruptimages = corrupt_images
+    # copytofolder(validimagepaths, outfolderoriginal)''
 
     # 3. All invalid images are removed from the Database
     print("removing from database (singlethreaded)")
