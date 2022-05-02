@@ -15,13 +15,17 @@ if not os.path.isdir("autoenc/resized"):
     distutils.dir_util.copy_tree("./resized", "./autoenc/resized")
     print("copy done")
 
+if not os.path.isdir("visualisations_out"):
+    print("creating visualisation directory")
+    os.mkdir("visualisations_out")
+
 # first network
 print("training cnn1")
-cfm_history.main(train_cnn.main(EPOCHS = 100), plottitle="CNN 1")
+cfm_history.main(train_cnn.main(EPOCHS = 200), plottitle="CNN 1")
 
 # alexnet
 print("training alexnet")
-cfm_history.main(train_alexnet.main(EPOCHS = 100), plottitle="AlexNet")
+cfm_history.main(train_alexnet.main(EPOCHS = 200), plottitle="AlexNet")
 
 # vgg16 no weights
 print("training vgg16 without weights")

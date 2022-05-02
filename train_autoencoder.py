@@ -133,3 +133,7 @@ def main(EPOCHS):
   embeddings = {'indices': indices, 'features': np.array(X)}
   pickle.dump(embeddings, 
               open('./autoenc/image_embeddings.pickle', 'wb'))
+
+
+if __name__ == "__main__":
+  main(2)
