@@ -9,7 +9,7 @@ import sqlite3
 import wandb
 wandb.init(project="BELL", save_code=False)
 from wandb.keras import WandbCallback
-import datetime
+from datetime import datetime
 
 # getting the dataset from the database has been outsourced
 from bellutils.get_datasets import get_datasets
