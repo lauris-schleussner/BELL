@@ -9,6 +9,14 @@ import sqlite3
 import tensorflow_datasets as tfds
 import random
 import numpy
+import wandb
+wandb.init(project="BELL", save_code=False)
+from wandb.keras import WandbCallback
+from datetime import datetime
+
+
+# getting the dataset from the database has been outsourced
+from bellutils.get_datasets import get_datasets
 
 # network parameter settings
 BATCHSIZE = 32
@@ -17,8 +25,9 @@ IMGSIZE = 244 # images are rescaled to a square, size in px
 
 # paths
 DBNAME = "database.db"
-CPPATH = "models/checkpoint.ckpt"
-CPDIR = os.path.dirname(CPPATH)
+SAVEPATH = "models/" + datetime.now().strftime('%m_%d_%Y_%H_%M_%S')+ "/"
+MODELPATH = SAVEPATH + "saved_cnn/"
+CPPATH = SAVEPATH + "cnn_checkpoint.ckpt"
 
 
 # database
@@ -28,43 +37,6 @@ c = conn.cursor()
 # Tensorflow Stuff 
 AUTOTUNE = tf.data.AUTOTUNE
 
-# return dataset for requested partition (train/val/test)
-def get_datasets(dataset_type):
-
-    assert dataset_type in ["train", "validation", "test"]
-
-    # select list of filenames and styles for the relevant dataset partition
-    labels = c.execute("SELECT style FROM artworks WHERE used = True AND " + dataset_type + " = True LIMIT 100").fetchall()
-    filenames = c.execute("SELECT filename FROM artworks WHERE used = True AND " + dataset_type + " = True LIMIT 100").fetchall()
-
-    # convert string label to its index
-    all_labels = ["Impressionism", "Realism", "Romanticism", "Expressionism", "Art_Nouveau_(Modern)"]
-    
-    # create lookup dict for all labels
-    label_to_index = dict((name, index) for index, name in enumerate(all_labels))
-
-    # use dict to map each style to its index NOTE: all_filenames is needed because filenames is a list in that strange sql return format [(label,), (label2,)]
-    # convert to pair for shuffeling
-    pair_list = []
-    for filepath, label in zip(filenames, labels):
-        pair_list.append([filepath[0], label_to_index[label[0]]])
-    
-    # shuffle 2d pair list
-    numpy.random.shuffle(pair_list)
-
-    # convert back to labels and images
-    all_index = []
-    all_filenames = []
-    for filepath, index in pair_list:
-        all_index.append(index)
-        all_filenames.append(filepath)
-
-    # create dataset
-    dataset = tf.data.Dataset.from_tensor_slices((all_filenames, all_index))#
-
-    return dataset
-
-
 # open and read image. This function is mapped to every dataset row
 def preprocess_image(filename, label):
 
@@ -73,23 +45,6 @@ def preprocess_image(filename, label):
     image /= 255 # normalize to [0,1] range
 
     return image, label
-
-# get shuffledness
-def gets(inli):
-    MINLENGTH = 2
-    counter = 0
-    li = ["A", "B", "C", "D"]
-    for i in inli:
-        a = i
-        if li[-1] == a:
-            li.append(a)
-        else:
-            max = len(li)
-            if max <= MINLENGTH:
-                counter += max
-            li = [a]
-
-    print(counter/len(inli))    
 
 def main(EPOCHS):
 
@@ -139,8 +94,6 @@ def main(EPOCHS):
         tf.keras.layers.Dense(5, activation='softmax'),
     ])
 
-    model.summary()
-
     # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
     # gradient descent to improve training
     optimizer = keras.optimizers.Adam(learning_rate=LEARNINGRATE)
@@ -159,12 +112,15 @@ def main(EPOCHS):
         train_ds,
         validation_data=val_ds,
         epochs=EPOCHS,
-        callbacks=[cp_callback, es_callback]
+        callbacks=[cp_callback, es_callback, WandbCallback(save_model = False)],
     )
+
+    # after sucessfull run save model
+    model.save(MODELPATH)
 
     print("succesfully trained")
 
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS=4)
+    main(EPOCHS=1)

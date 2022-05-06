@@ -6,6 +6,10 @@ import tensorflow as tf
 # tf.compat.v1.enable_eager_execution()
 from tensorflow import keras
 import sqlite3
+import wandb
+wandb.init(project="BELL", save_code=False)
+from wandb.keras import WandbCallback
+import datetime
 
 # getting the dataset from the database has been outsourced
 from bellutils.get_datasets import get_datasets
@@ -17,8 +21,9 @@ IMGSIZE = 244 # images are rescaled to a square, size in px
 
 # paths
 DBNAME = "database.db"
-CPPATH = "models/checkpoint.ckpt"
-CPDIR = os.path.dirname(CPPATH)
+SAVEPATH = "models/" + datetime.now().strftime('%m_%d_%Y_%H_%M_%S')+ "/"
+MODELPATH = SAVEPATH + "saved_resnet50/"
+CPPATH = SAVEPATH + "cnn_checkpoint.ckpt"
 
 # database
 conn = sqlite3.connect(DBNAME)
@@ -106,7 +111,7 @@ def main(EPOCHS, pretrained):
         train_ds,
         validation_data=val_ds,
         epochs=EPOCHS,
-        callbacks=[cp_callback, es_callback]
+        callbacks=[cp_callback, es_callback, WandbCallback(save_model = False)]
     )
 
 
