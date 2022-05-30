@@ -33,7 +33,6 @@ c = conn.cursor()
 AUTOTUNE = tf.data.AUTOTUNE
 
 
-
 # open and read image. This function is mapped to every dataset row
 def preprocess_image(filename, label):
 
@@ -79,17 +78,15 @@ def main(EPOCHS, pretrained):
         pretrained_model = tf.keras.applications.xception.Xception(include_top=False, weights="imagenet", input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max)
         pretrained_model.trainable = False
 
-        inputs = tf.keras.Input(shape = (IMGSIZE, IMGSIZE, 3))
-        x = pretrained_model(inputs, training = False)
-        x = tf.keras.layers.GlobalAveragePooling2D()(x)
+        x = tf.keras.layers.GlobalAveragePooling2D()(pretrained_model.output)
 
         # add dropout and 3 dense layers ontop
         x = tf.keras.layers.Dropout(0.2)(x)
-        x = tf.keras.layers.Dense(1024)(x)
-        x = tf.keras.layers.Dense(256)(x)
-        outputs = tf.keras.layers.Dense(5)(x)
+        x = tf.keras.layers.Dense(1024, activation='relu')(x)
+        x = tf.keras.layers.Dense(256, activation='relu')(x)
+        outputs = tf.keras.layers.Dense(5, activation='softmax')(x)
 
-        model = tf.keras.Model(inputs, outputs)
+        model = tf.keras.Model(pretrained_model.inputs, outputs)
 
     else:
         model = tf.keras.applications.xception.Xception(include_top=True, weights=None, input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max, classes = 5)
@@ -115,6 +112,8 @@ def main(EPOCHS, pretrained):
         epochs=EPOCHS,
         callbacks=[cp_callback, es_callback, WandbCallback(save_model = False)]
     )
+
+    model.save(MODELPATH)
 
     return [model, history, test_ds]
 

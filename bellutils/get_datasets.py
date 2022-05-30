@@ -15,8 +15,8 @@ def get_datasets(dataset_type):
     assert dataset_type in ["train", "validation", "test"]
 
     # select list of filenames and styles for the relevant dataset partition
-    labels = c.execute("SELECT style FROM artworks WHERE used = True AND " + dataset_type + " = True LIMIT 100").fetchall()
-    filenames = c.execute("SELECT filename FROM artworks WHERE used = True AND " + dataset_type + " = True LIMIT 100").fetchall()
+    labels = c.execute("SELECT style FROM artworks WHERE used = True AND " + dataset_type + " = True").fetchall()
+    filenames = c.execute("SELECT filename FROM artworks WHERE used = True AND " + dataset_type + " = True").fetchall()
 
     # convert string label to its index
     all_labels = ["Impressionism", "Realism", "Romanticism", "Expressionism", "Art_Nouveau_(Modern)"]

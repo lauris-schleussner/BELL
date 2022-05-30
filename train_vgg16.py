@@ -77,25 +77,28 @@ def main(EPOCHS, pretrained):
 
 
     # https://www.tensorflow.org/api_docs/python/tf/keras/applications/vgg16/
+    # https://stackoverflow.com/questions/68463498/how-to-display-the-layers-of-a-pretrained-model-instead-of-a-single-entry-in-mod
     if pretrained:
         pretrained_model = tf.keras.applications.vgg16.VGG16(include_top=False, weights="imagenet", input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max)
         pretrained_model.trainable = False
 
-        inputs = tf.keras.Input(shape = (IMGSIZE, IMGSIZE, 3))
-        x = pretrained_model(inputs, training = False)
-        x = tf.keras.layers.GlobalAveragePooling2D()(x)
+        # add model and global pooling
+        x = tf.keras.layers.GlobalAveragePooling2D()(pretrained_model.output)
 
         # add dropout and 3 dense layers ontop
         x = tf.keras.layers.Dropout(0.2)(x)
-        x = tf.keras.layers.Dense(1024)(x)
-        x = tf.keras.layers.Dense(256)(x)
-        outputs = tf.keras.layers.Dense(5)(x)
+        x = tf.keras.layers.Dense(1024, activation='relu')(x)
+        x = tf.keras.layers.Dense(256, activation='relu')(x)
 
-        model = tf.keras.Model(inputs, outputs)
+        outputs = tf.keras.layers.Dense(5, activation='softmax')(x)
+
+        # combine model
+        model = tf.keras.Model(pretrained_model.input, outputs)
 
     else:
         model = tf.keras.applications.vgg16.VGG16(include_top=True, weights=None, input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max, classes = 5)
 
+    model.summary()
 
     # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
     # gradient descent to improve training
@@ -117,8 +120,9 @@ def main(EPOCHS, pretrained):
         epochs=EPOCHS,
         callbacks=[cp_callback, es_callback, WandbCallback(save_model = False)]
     )
+    model.save(MODELPATH)
 
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-        main(EPOCHS = 1, pretrained = True)
+        main(EPOCHS = 10, pretrained = True)
