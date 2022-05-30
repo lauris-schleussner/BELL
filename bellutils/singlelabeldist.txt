@@ -1,4 +1,3 @@
-# this file shows the distribution of single labels. If an image contained more than one label, it counts towards all its styles. The sum of alle the numbers should be slughtly higher than the image total.
 Impressionism 16786
 Realism 16700
 Romanticism 15139

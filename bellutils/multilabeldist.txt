@@ -1,4 +1,3 @@
-# this file shows the amount of times each style combination appeared
 (('Neo_Impressionism', 'Pointillism'), 449)
 (('Cubism', 'Expressionism'), 349)
 (('Impressionism', 'Realism'), 342)

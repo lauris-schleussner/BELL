@@ -79,16 +79,16 @@ def all_findcorruptresizeandcopy(pathlist, outfolderresized):
             image_o = tf.io.decode_image(image_o, channels=3)
 
             # validity check, try to resize
-            image_test = tf.image.convert_image_dtype(image_o, tf.float32)
-            image_test = tf.image.resize_with_pad(image_test, 100, 100)
+            #mage_test = tf.image.convert_image_dtype(image_o, tf.float32)
+            #image_test = tf.image.resize_with_pad(image_test, 100, 100)
 
             del image_test
             del image_o
 
             # save
             # https://www.tensorflow.org/versions/r2.5/api_docs/python/tf/keras/preprocessing/image/save_img
-            # tf.keras.utils.save_img(outfolderresized + name, image_test)
-            # tf.keras.preprocessing.image.save_img(outfolderresized + name, image_test)
+            tf.keras.utils.save_img(outfolderresized + name, image_test)
+            tf.keras.preprocessing.image.save_img(outfolderresized + name, image_test)
 
             # if passes as valid add to list
             validimages.append(imgpath)
