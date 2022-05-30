@@ -4,7 +4,7 @@
 
 import sqlite3
 
-DBNAME = "WikiartDatasetMultiStyles.db"
+DBNAME = "database.db"
 DSPATH = "D:/wikiartbackup/saved/" # path of the "saved" folder
 
 conn = sqlite3.connect(DBNAME)
@@ -43,7 +43,6 @@ def listall():
     return orderlist
 
 def showpairs():
-
     
     # create list that holds every imageid and their associated styles
     stylelist = []
@@ -66,6 +65,8 @@ def showpairs():
     for styles in styledict.values():
         if len(styles) != 1:
             stylelist.append(styles)
+
+    print(styledict)
     # https://stackoverflow.com/questions/27733685/iterating-over-dict-values/27733728
     # find most common combinations
     from collections import Counter
@@ -79,11 +80,12 @@ def showpairs():
         for comb in combinations(sub,2):
             d[comb] += 1
 
+
+
     res = d.most_common()
     for i in res:
         print(i)
-
     
 
 if __name__ == "__main__":
-    listall()
+    showpairs()

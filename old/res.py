@@ -33,6 +33,7 @@ for path, style in tqdm(res):
 l = []
 colors = ["red","blue","green","grey", "purple"]
 avgsize = []
+aspectratios = []
 for (style, color) in zip(dc, colors):
     xlist = []
     ylist = []
@@ -47,11 +48,11 @@ for (style, color) in zip(dc, colors):
             xges += x
             yges += y
         else: 
-            xlist.append(y)
-            ylist.append(x)
+            xlist.append(x)
+            ylist.append(y)
             xges += x
             yges += y
-    avgsize.append([style, yges/2517 , xges/2517]) 
+    avgsize.append([style, yges/2517 , xges/2517])
 
     plt.scatter(xlist, ylist, color = color, alpha = 0.5, label = style)
 
