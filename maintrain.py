@@ -10,7 +10,7 @@ import os
 import distutils.dir_util
 
 
-PARAM_EPOCHS = 2
+PARAM_EPOCHS = 200
 AE_PARAM_EPOCHS = 3
 
 
