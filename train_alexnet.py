@@ -7,7 +7,9 @@ import tensorflow as tf
 from tensorflow import keras
 import sqlite3
 import wandb
-wandb.init(project="BELL", save_code=False)
+# wandb.init(project="BELL", save_code=False)
+# wandb.init(project="bell", entity="lauris_bell", tags=['alexnet'])
+
 from wandb.keras import WandbCallback
 from datetime import datetime
 
@@ -17,7 +19,7 @@ from bellutils.get_datasets import get_datasets
 # network parameter settings
 BATCHSIZE = 32
 LEARNINGRATE = 0.001 # default Adam learning rate
-IMGSIZE = 244 # images are rescaled to a square, size in px
+IMGSIZE = 100 # 244 # images are rescaled to a square, size in px
 
 # paths
 DBNAME = "database.db"
@@ -43,6 +45,9 @@ def preprocess_image(filename, label):
 
 
 def main(EPOCHS):
+
+    run_tags = ['alexnet']
+    wandb.init(project="bell", entity="lauris_bell", tags=run_tags)
 
     # get dataset
     train_ds = get_datasets("train")
@@ -72,7 +77,7 @@ def main(EPOCHS):
     
     # alexnet
     model = keras.Sequential([
-        keras.layers.Conv2D(96, (11,11),  strides = 4, padding = "same", activation = "relu", input_shape = (244,244,3)),
+        keras.layers.Conv2D(96, (11,11),  strides = 4, padding = "same", activation = "relu", input_shape = (IMGSIZE,IMGSIZE,3)),
         # keras.layers.Lambda(tf.nn.local_response_normalization),
         keras.layers.MaxPooling2D((3, 3), strides=2),
 
@@ -118,6 +123,8 @@ def main(EPOCHS):
     )
     # after sucessfull run save model
     model.save(MODELPATH)
+
+    wandb.finish()
 
     print("succesfully trained and saved the model ")
 

@@ -7,7 +7,9 @@ import tensorflow as tf
 from tensorflow import keras
 import sqlite3
 import wandb
-wandb.init(project="BELL", save_code=False)
+# wandb.init(project="BELL", save_code=False)
+# wandb.init(project="bell", entity="lauris_bell", tags=['vgg16'])
+
 from wandb.keras import WandbCallback
 from datetime import datetime
 
@@ -17,7 +19,7 @@ from bellutils.get_datasets import get_datasets
 # network parameter settings
 BATCHSIZE = 32
 LEARNINGRATE = 0.001 # default Adam learning rate
-IMGSIZE = 244 # images are rescaled to a square, size in px
+IMGSIZE = 100 # 244 # images are rescaled to a square, size in px
 
 # paths
 DBNAME = "database.db"
@@ -47,6 +49,11 @@ def preprocess_image(filename, label):
 
 
 def main(EPOCHS, pretrained):
+
+    run_tags = ['vgg16']
+    if pretrained:
+        run_tags.append('pretrained')
+    wandb.init(project="bell", entity="lauris_bell", tags=run_tags)
 
     # get dataset
     train_ds = get_datasets("train")
@@ -122,7 +129,9 @@ def main(EPOCHS, pretrained):
     )
     model.save(MODELPATH)
 
+    wandb.finish()
+
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-        main(EPOCHS = 10, pretrained = True)
+        main(EPOCHS = 1, pretrained = True)

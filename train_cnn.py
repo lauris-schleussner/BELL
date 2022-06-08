@@ -10,7 +10,9 @@ import tensorflow_datasets as tfds
 import random
 import numpy
 import wandb
-wandb.init(project="BELL", save_code=False)
+# wandb.init(project="BELL", save_code=False)
+# wandb.init(project="bell", entity="lauris_bell", tags=['cnn'])
+
 from wandb.keras import WandbCallback
 from datetime import datetime
 
@@ -21,7 +23,7 @@ from bellutils.get_datasets import get_datasets
 # network parameter settings
 BATCHSIZE = 32
 LEARNINGRATE = 0.001 # default Adam learning rate
-IMGSIZE = 244 # images are rescaled to a square, size in px
+IMGSIZE = 100 # 244 # images are rescaled to a square, size in px
 
 # paths
 DBNAME = "database.db"
@@ -47,6 +49,9 @@ def preprocess_image(filename, label):
     return image, label
 
 def main(EPOCHS):
+
+    run_tags = ['cnn']
+    wandb.init(project="bell", entity="lauris_bell", tags=run_tags)
 
     # get dataset
     train_ds = get_datasets("train")
@@ -118,9 +123,11 @@ def main(EPOCHS):
     # after sucessfull run save model
     model.save(MODELPATH)
 
+    wandb.finish()
+
     print("succesfully trained")
 
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS=1)
+    main(EPOCHS=50)
