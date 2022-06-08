@@ -25,7 +25,7 @@ IMGSIZE = 100 # 244 # images are rescaled to a square, size in px
 DBNAME = "database.db"
 SAVEPATH = "models/" + datetime.now().strftime('%m_%d_%Y_%H_%M_%S')+ "/"
 MODELPATH = SAVEPATH + "saved_alexnet/"
-CPPATH = SAVEPATH + "cnn_checkpoint.ckpt"
+# CPPATH = SAVEPATH + "cnn_checkpoint.ckpt"
 
 # database
 conn = sqlite3.connect(DBNAME)
@@ -112,14 +112,15 @@ def main(EPOCHS):
         metrics=['accuracy'])
 
     # callbacks that are triggered during training, create checkpoints
-    cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=CPPATH, save_weights_only=True, verbose=1)
+    # cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=CPPATH, save_weights_only=True, verbose=1)
     es_callback = tf.keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
 
     history = model.fit(
         train_ds,
         validation_data=val_ds,
         epochs=EPOCHS,
-        callbacks=[cp_callback, es_callback, WandbCallback(save_model = False)]
+        # callbacks=[cp_callback, es_callback, WandbCallback(save_model = False)]
+        callbacks=[es_callback, WandbCallback(save_model = False)]
     )
     # after sucessfull run save model
     model.save(MODELPATH)
