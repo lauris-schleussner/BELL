@@ -13,7 +13,7 @@ import numpy
 # network parameter settings
 BATCHSIZE = 32
 LEARNINGRATE = 0.001 # default Adam learning rate
-IMGSIZE = 244 # images are rescaled to a square, size in px
+IMGSIZE = 100 # 244 # images are rescaled to a square, size in px
 
 # paths
 DBNAME = "database.db"
@@ -34,8 +34,10 @@ def get_datasets(dataset_type):
     assert dataset_type in ["train", "validation", "test"]
 
     # select list of filenames and styles for the relevant dataset partition
-    labels = c.execute("SELECT style FROM artworks WHERE used = True AND " + dataset_type + " = True LIMIT 100").fetchall()
-    filenames = c.execute("SELECT filename FROM artworks WHERE used = True AND " + dataset_type + " = True LIMIT 100").fetchall()
+    # labels = c.execute("SELECT style FROM artworks WHERE used = True AND " + dataset_type + " = True LIMIT 100").fetchall()
+    # filenames = c.execute("SELECT filename FROM artworks WHERE used = True AND " + dataset_type + " = True LIMIT 100").fetchall()
+    labels = c.execute("SELECT style FROM artworks WHERE used = True AND " + dataset_type + " = True").fetchall()
+    filenames = c.execute("SELECT filename FROM artworks WHERE used = True AND " + dataset_type + " = True").fetchall()
 
     # convert string label to its index
     all_labels = ["Impressionism", "Realism", "Romanticism", "Expressionism", "Art_Nouveau_(Modern)"]
@@ -167,4 +169,4 @@ def main(EPOCHS):
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS=4)
+    main(EPOCHS=30)

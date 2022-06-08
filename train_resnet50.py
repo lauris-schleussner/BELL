@@ -13,7 +13,7 @@ from bellutils.get_datasets import get_datasets
 # network parameter settings
 BATCHSIZE = 32
 LEARNINGRATE = 0.001 # default Adam learning rate
-IMGSIZE = 244 # images are rescaled to a square, size in px
+IMGSIZE = 100 # 244 # images are rescaled to a square, size in px
 
 # paths
 DBNAME = "database.db"
@@ -80,7 +80,7 @@ def main(EPOCHS, pretrained):
         x = tf.keras.layers.Dropout(0.2)(x)
         x = tf.keras.layers.Dense(1024)(x)
         x = tf.keras.layers.Dense(256)(x)
-        outputs = tf.keras.layers.Dense(5)(x)
+        outputs = tf.keras.layers.Dense(5, activation='softmax')(x)
 
         model = tf.keras.Model(inputs, outputs)
 
@@ -113,4 +113,4 @@ def main(EPOCHS, pretrained):
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(1, True)
+    main(30, True)

@@ -13,7 +13,7 @@ from bellutils.get_datasets import get_datasets
 # network parameter settings
 BATCHSIZE = 32
 LEARNINGRATE = 0.001 # default Adam learning rate
-IMGSIZE = 244 # images are rescaled to a square, size in px
+IMGSIZE = 100 # 244 # images are rescaled to a square, size in px
 
 # paths
 MODELPATH = "models/"
@@ -71,7 +71,7 @@ def main(EPOCHS):
     
     # alexnet
     model = keras.Sequential([
-        keras.layers.Conv2D(96, (11,11),  strides = 4, padding = "same", activation = "relu", input_shape = (244,244,3)),
+        keras.layers.Conv2D(96, (11,11),  strides = 4, padding = "same", activation = "relu", input_shape = (IMGSIZE,IMGSIZE,3)),
         # keras.layers.Lambda(tf.nn.local_response_normalization),
         keras.layers.MaxPooling2D((3, 3), strides=2),
 
@@ -92,7 +92,7 @@ def main(EPOCHS):
         keras.layers.Dropout(0.5),
         keras.layers.Dense(4096, activation = "relu"),
         keras.layers.Dropout(0.5),
-        keras.layers.Dense(5, activation = "relu")
+        keras.layers.Dense(5, activation = "softmax")
     ])
 
     # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
@@ -123,4 +123,4 @@ def main(EPOCHS):
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS = 1)
+    main(EPOCHS = 30)
