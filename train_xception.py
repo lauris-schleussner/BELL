@@ -24,7 +24,7 @@ IMGSIZE = 100 # 244 # images are rescaled to a square, size in px
 # paths
 DBNAME = "database.db"
 SAVEPATH = "models/" + datetime.now().strftime('%m_%d_%Y_%H_%M_%S')+ "/"
-MODELPATH = SAVEPATH + "saved_xception/"
+# MODELPATH = SAVEPATH + "saved_xception/"
 # CPPATH = SAVEPATH + "cnn_checkpoint.ckpt"
 
 # database
@@ -55,6 +55,11 @@ def main(EPOCHS, WAB_FLAG, pretrained):
         if pretrained:
             run_tags.append('pretrained')
         wandb.init(project="bell", entity="lauris_bell", tags=run_tags)
+
+    if pretrained:
+        MODELPATH = SAVEPATH + "saved_xception_finetuned/"
+    else:
+        MODELPATH = SAVEPATH + "saved_xception/"
 
     # get dataset
     train_ds = get_datasets("train")
