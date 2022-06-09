@@ -133,7 +133,7 @@ def main(EPOCHS, WAB_FLAG, pretrained):
         epochs=EPOCHS,
         # callbacks=[cp_callback, es_callback, WandbCallback(save_model = False)]
         # callbacks=[es_callback, WandbCallback(save_model = False)]
-        callbakcs=callbacks
+        callbacks=callbacks
     )
     model.save(MODELPATH)
 
