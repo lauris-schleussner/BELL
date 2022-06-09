@@ -13,6 +13,8 @@ import wandb
 from wandb.keras import WandbCallback
 from datetime import datetime
 
+import atexit
+
 # getting the dataset from the database has been outsourced
 from bellutils.get_datasets import get_datasets
 
@@ -88,40 +90,48 @@ def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list()):
     train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
     val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
 
+    # Create a MirroredStrategy.
+    strategy = tf.distribute.MirroredStrategy()
+    print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
-    # https://www.tensorflow.org/api_docs/python/tf/keras/applications/vgg16/
-    # https://stackoverflow.com/questions/68463498/how-to-display-the-layers-of-a-pretrained-model-instead-of-a-single-entry-in-mod
-    if pretrained:
-        pretrained_model = tf.keras.applications.vgg16.VGG16(include_top=False, weights="imagenet", input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max)
-        pretrained_model.trainable = False
+    # Open a strategy scope.
+    with strategy.scope():
+        # Everything that creates variables should be under the strategy scope.
+        # In general this is only model construction & `compile()`.
 
-        # add model and global pooling
-        x = tf.keras.layers.GlobalAveragePooling2D()(pretrained_model.output)
+        # https://www.tensorflow.org/api_docs/python/tf/keras/applications/vgg16/
+        # https://stackoverflow.com/questions/68463498/how-to-display-the-layers-of-a-pretrained-model-instead-of-a-single-entry-in-mod
+        if pretrained:
+            pretrained_model = tf.keras.applications.vgg16.VGG16(include_top=False, weights="imagenet", input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max)
+            pretrained_model.trainable = False
 
-        # add dropout and 3 dense layers ontop
-        x = tf.keras.layers.Dropout(0.2)(x)
-        x = tf.keras.layers.Dense(1024, activation='relu')(x)
-        x = tf.keras.layers.Dense(256, activation='relu')(x)
+            # add model and global pooling
+            x = tf.keras.layers.GlobalAveragePooling2D()(pretrained_model.output)
 
-        outputs = tf.keras.layers.Dense(5, activation='softmax')(x)
+            # add dropout and 3 dense layers ontop
+            x = tf.keras.layers.Dropout(0.2)(x)
+            x = tf.keras.layers.Dense(1024, activation='relu')(x)
+            x = tf.keras.layers.Dense(256, activation='relu')(x)
 
-        # combine model
-        model = tf.keras.Model(pretrained_model.input, outputs)
+            outputs = tf.keras.layers.Dense(5, activation='softmax')(x)
 
-    else:
-        model = tf.keras.applications.vgg16.VGG16(include_top=True, weights=None, input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max, classes = 5)
+            # combine model
+            model = tf.keras.Model(pretrained_model.input, outputs)
 
-    model.summary()
+        else:
+            model = tf.keras.applications.vgg16.VGG16(include_top=True, weights=None, input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max, classes = 5)
 
-    # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
-    # gradient descent to improve training
-    optimizer = keras.optimizers.Adam(learning_rate=LEARNINGRATE)
+        model.summary()
 
-    # configure model for training
-    model.compile(
-        optimizer=optimizer,
-        loss=tf.losses.SparseCategoricalCrossentropy(),
-        metrics=['accuracy'])
+        # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
+        # gradient descent to improve training
+        optimizer = keras.optimizers.Adam(learning_rate=LEARNINGRATE)
+
+        # configure model for training
+        model.compile(
+            optimizer=optimizer,
+            loss=tf.losses.SparseCategoricalCrossentropy(),
+            metrics=['accuracy'])
 
     # callbacks that are triggered during training, create checkpoints
     # cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=CPPATH, save_weights_only=True, verbose=1)
@@ -146,7 +156,9 @@ def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list()):
     if WAB_FLAG:
         wandb.finish()
 
+    atexit.register(strategy._extended._collective_ops._pool.close) # type: ignore
+
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-        main(EPOCHS=3, WAB_FLAG=False, pretrained=True)
+    main(EPOCHS=3, WAB_FLAG=True, pretrained=True, add_tags=['testrun02'])

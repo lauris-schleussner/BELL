@@ -17,6 +17,8 @@ from datetime import datetime
 # getting the dataset from the database has been outsourced
 from bellutils.get_datasets import get_datasets
 
+import atexit
+
 # network parameter settings
 BATCHSIZE = 32
 LEARNINGRATE = 0.001 # default Adam learning rate
@@ -76,42 +78,51 @@ def main(EPOCHS, WAB_FLAG, add_tags=list()):
 
     train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
     val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
+
+    # Create a MirroredStrategy.
+    strategy = tf.distribute.MirroredStrategy()
+    print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
+
+    # Open a strategy scope.
+    with strategy.scope():
+        # Everything that creates variables should be under the strategy scope.
+        # In general this is only model construction & `compile()`.
     
-    # alexnet
-    model = keras.Sequential([
-        keras.layers.Conv2D(96, (11,11),  strides = 4, padding = "same", activation = "relu", input_shape = (IMGSIZE,IMGSIZE,3)),
-        # keras.layers.Lambda(tf.nn.local_response_normalization),
-        keras.layers.MaxPooling2D((3, 3), strides=2),
+        # alexnet
+        model = keras.Sequential([
+            keras.layers.Conv2D(96, (11,11),  strides = 4, padding = "same", activation = "relu", input_shape = (IMGSIZE,IMGSIZE,3)),
+            # keras.layers.Lambda(tf.nn.local_response_normalization),
+            keras.layers.MaxPooling2D((3, 3), strides=2),
 
-        keras.layers.Conv2D(256, (5,5), strides = 1, padding = "same", activation = "relu"),
-        # keras.layers.Lambda(tf.nn.local_response_normalization),
-        keras.layers.MaxPooling2D((3, 3), strides=2),
+            keras.layers.Conv2D(256, (5,5), strides = 1, padding = "same", activation = "relu"),
+            # keras.layers.Lambda(tf.nn.local_response_normalization),
+            keras.layers.MaxPooling2D((3, 3), strides=2),
 
-        keras.layers.Conv2D(384, (3,3), strides = 1, padding = "same", activation = "relu"),
+            keras.layers.Conv2D(384, (3,3), strides = 1, padding = "same", activation = "relu"),
 
-        keras.layers.Conv2D(384, (3,3), strides = 1, padding='same', activation="relu"),
+            keras.layers.Conv2D(384, (3,3), strides = 1, padding='same', activation="relu"),
 
-        keras.layers.Conv2D(256, (3,3), strides = 1, padding='same', activation="relu"),
-        keras.layers.MaxPooling2D((3, 3), strides=2),
+            keras.layers.Conv2D(256, (3,3), strides = 1, padding='same', activation="relu"),
+            keras.layers.MaxPooling2D((3, 3), strides=2),
 
-        keras.layers.Flatten(),
+            keras.layers.Flatten(),
 
-        keras.layers.Dense(4096, activation = "relu"),
-        keras.layers.Dropout(0.5),
-        keras.layers.Dense(4096, activation = "relu"),
-        keras.layers.Dropout(0.5),
-        keras.layers.Dense(5, activation = "relu")
-    ])
+            keras.layers.Dense(4096, activation = "relu"),
+            keras.layers.Dropout(0.5),
+            keras.layers.Dense(4096, activation = "relu"),
+            keras.layers.Dropout(0.5),
+            keras.layers.Dense(5, activation = "relu")
+        ])
 
-    # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
-    # gradient descent to improve training
-    optimizer = keras.optimizers.Adam(learning_rate=LEARNINGRATE)
+        # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
+        # gradient descent to improve training
+        optimizer = keras.optimizers.Adam(learning_rate=LEARNINGRATE)
 
-    # configure model for training
-    model.compile(
-        optimizer=optimizer,
-        loss=tf.losses.SparseCategoricalCrossentropy(),
-        metrics=['accuracy'])
+        # configure model for training
+        model.compile(
+            optimizer=optimizer,
+            loss=tf.losses.SparseCategoricalCrossentropy(),
+            metrics=['accuracy'])
 
     # callbacks that are triggered during training, create checkpoints
     # cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=CPPATH, save_weights_only=True, verbose=1)
@@ -138,7 +149,9 @@ def main(EPOCHS, WAB_FLAG, add_tags=list()):
 
     print("succesfully trained and saved the model ")
 
+    atexit.register(strategy._extended._collective_ops._pool.close) # type: ignore
+
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS=3, WAB_FLAG=False)
+    main(EPOCHS=3, WAB_FLAG=False, add_tags=['testrun02'])
