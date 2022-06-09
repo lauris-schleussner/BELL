@@ -48,13 +48,13 @@ def preprocess_image(filename, label):
 
     return image, label
 
-def main(EPOCHS, WAB_FLAG, pretrained):
+def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list()):
 
     if WAB_FLAG:
         run_tags = ['xception']
         if pretrained:
             run_tags.append('pretrained')
-        wandb.init(project="bell", entity="lauris_bell", tags=run_tags)
+        wandb.init(project="bell", entity="lauris_bell", tags=run_tags+add_tags)
 
     if pretrained:
         MODELPATH = SAVEPATH + "saved_xception_finetuned/"
@@ -141,4 +141,4 @@ def main(EPOCHS, WAB_FLAG, pretrained):
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS=50, WAB_FLAG=False, pretrained=True)
+    main(EPOCHS=3, WAB_FLAG=False, pretrained=True)

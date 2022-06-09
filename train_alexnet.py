@@ -45,11 +45,11 @@ def preprocess_image(filename, label):
     return image, label
 
 
-def main(EPOCHS, WAB_FLAG):
+def main(EPOCHS, WAB_FLAG, add_tags=list()):
 
     if WAB_FLAG:
         run_tags = ['alexnet']
-        wandb.init(project="bell", entity="lauris_bell", tags=run_tags)
+        wandb.init(project="bell", entity="lauris_bell", tags=run_tags+add_tags)
 
     # get dataset
     train_ds = get_datasets("train")
@@ -141,4 +141,4 @@ def main(EPOCHS, WAB_FLAG):
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS=50, WAB_FLAG=False)
+    main(EPOCHS=3, WAB_FLAG=False)
