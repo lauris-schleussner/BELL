@@ -6,11 +6,12 @@ import tensorflow as tf
 # tf.compat.v1.enable_eager_execution()
 from tensorflow import keras
 import sqlite3
+
 import wandb
 # wandb.init(project="BELL", save_code=False)
 # wandb.init(project="bell", entity="lauris_bell", tags=['alexnet'])
-
 from wandb.keras import WandbCallback
+
 from datetime import datetime
 
 # getting the dataset from the database has been outsourced
@@ -44,10 +45,11 @@ def preprocess_image(filename, label):
     return image, label
 
 
-def main(EPOCHS):
+def main(EPOCHS, WAB_FLAG):
 
-    run_tags = ['alexnet']
-    wandb.init(project="bell", entity="lauris_bell", tags=run_tags)
+    if WAB_FLAG:
+        run_tags = ['alexnet']
+        wandb.init(project="bell", entity="lauris_bell", tags=run_tags)
 
     # get dataset
     train_ds = get_datasets("train")
@@ -115,21 +117,28 @@ def main(EPOCHS):
     # cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=CPPATH, save_weights_only=True, verbose=1)
     es_callback = tf.keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
 
+    if WAB_FLAG:
+        callbacks = [es_callback, WandbCallback(save_model = False)]
+    else:
+        callbacks = [es_callback]
+
     history = model.fit(
         train_ds,
         validation_data=val_ds,
         epochs=EPOCHS,
         # callbacks=[cp_callback, es_callback, WandbCallback(save_model = False)]
-        callbacks=[es_callback, WandbCallback(save_model = False)]
+        # callbacks=[es_callback, WandbCallback(save_model = False)]
+        callbacks=callbacks
     )
     # after sucessfull run save model
     model.save(MODELPATH)
 
-    wandb.finish()
+    if WAB_FLAG:
+        wandb.finish()
 
     print("succesfully trained and saved the model ")
 
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS = 1)
+    main(EPOCHS=50, WAB_FLAG=False)
