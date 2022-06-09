@@ -1,7 +1,7 @@
 # TODO implement SSIM, PSNR
 
 import os
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # silence Tensorflow
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # silence Tensorflow
 import tensorflow as tf
 # tf.compat.v1.enable_eager_execution()
 from tensorflow import keras
