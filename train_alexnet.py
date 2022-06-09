@@ -47,7 +47,7 @@ def preprocess_image(filename, label):
     return image, label
 
 
-def main(EPOCHS, WAB_FLAG, add_tags=list()):
+def main(EPOCHS, WAB_FLAG, add_tags=list(), savemodel=True):
 
     if WAB_FLAG:
         run_tags = ['alexnet']
@@ -141,8 +141,10 @@ def main(EPOCHS, WAB_FLAG, add_tags=list()):
         # callbacks=[es_callback, WandbCallback(save_model = False)]
         callbacks=callbacks
     )
-    # after sucessfull run save model
-    model.save(MODELPATH)
+
+    if savemodel:
+        # after sucessfull run save model
+        model.save(MODELPATH)
 
     if WAB_FLAG:
         wandb.finish()
@@ -154,4 +156,4 @@ def main(EPOCHS, WAB_FLAG, add_tags=list()):
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS=3, WAB_FLAG=False, add_tags=['testrun02'])
+    main(EPOCHS=3, WAB_FLAG=False, add_tags=['testrun'], savemodel=False)

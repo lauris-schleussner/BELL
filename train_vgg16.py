@@ -50,7 +50,7 @@ def preprocess_image(filename, label):
     return image, label
 
 
-def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list()):
+def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list(), savemodel=True):
 
     if WAB_FLAG:
         run_tags = ['vgg16']
@@ -151,7 +151,8 @@ def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list()):
         callbacks=callbacks
     )
 
-    model.save(MODELPATH)
+    if savemodel:
+        model.save(MODELPATH)
 
     if WAB_FLAG:
         wandb.finish()
@@ -161,4 +162,4 @@ def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list()):
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS=3, WAB_FLAG=True, pretrained=True, add_tags=['testrun02'])
+    main(EPOCHS=3, WAB_FLAG=True, pretrained=True, add_tags=['testrun'], savemodel=False)
