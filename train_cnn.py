@@ -1,7 +1,7 @@
 # train default cnn 
 
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # silence Tensorflow
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # silence Tensorflow
 import tensorflow as tf
 # tf.compat.v1.enable_eager_execution()
 from tensorflow import keras
@@ -15,6 +15,8 @@ import wandb
 
 from wandb.keras import WandbCallback
 from datetime import datetime
+
+import atexit
 
 
 # getting the dataset from the database has been outsourced
@@ -48,11 +50,11 @@ def preprocess_image(filename, label):
 
     return image, label
 
-def main(EPOCHS, WAB_FLAG):
+def main(EPOCHS, WAB_FLAG, add_tags=list()):
 
     if WAB_FLAG:
         run_tags = ['cnn']
-        wandb.init(project="bell", entity="lauris_bell", tags=run_tags)
+        wandb.init(project="bell", entity="lauris_bell", tags=run_tags+add_tags)
 
     # get dataset
     train_ds = get_datasets("train")
@@ -81,34 +83,42 @@ def main(EPOCHS, WAB_FLAG):
     train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
     val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
 
-    
-    # load model
-    model = tf.keras.Sequential([
-        tf.keras.layers.Conv2D(64, 5, activation="relu", padding='same', input_shape = (IMGSIZE, IMGSIZE, 3)),
-        tf.keras.layers.MaxPooling2D(2),
-        tf.keras.layers.Conv2D(128, 3, activation="relu", padding='same'),
-        tf.keras.layers.Conv2D(128, 3, activation="relu", padding='same'),
-        tf.keras.layers.MaxPooling2D(2),
-        tf.keras.layers.Conv2D(256, 3, activation="relu", padding='same'),
-        tf.keras.layers.Conv2D(256, 3, activation="relu", padding='same'),
-        tf.keras.layers.MaxPooling2D(2),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dropout(.5),
-        tf.keras.layers.Dense(64, activation='relu'),
-        tf.keras.layers.Dropout(.5),
-        tf.keras.layers.Dense(5, activation='softmax'),
-    ])
 
-    # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
-    # gradient descent to improve training
-    optimizer = keras.optimizers.Adam(learning_rate=LEARNINGRATE)
+    # Create a MirroredStrategy.
+    strategy = tf.distribute.MirroredStrategy()
+    print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
-    # configure model for training
-    model.compile(
-        optimizer=optimizer,
-        loss=tf.losses.SparseCategoricalCrossentropy(),
-        metrics=['accuracy'])
+    # Open a strategy scope.
+    with strategy.scope():
+        # Everything that creates variables should be under the strategy scope.
+        # In general this is only model construction & `compile()`.
+        # load model
+        model = tf.keras.Sequential([
+            tf.keras.layers.Conv2D(64, 5, activation="relu", padding='same', input_shape = (IMGSIZE, IMGSIZE, 3)),
+            tf.keras.layers.MaxPooling2D(2),
+            tf.keras.layers.Conv2D(128, 3, activation="relu", padding='same'),
+            tf.keras.layers.Conv2D(128, 3, activation="relu", padding='same'),
+            tf.keras.layers.MaxPooling2D(2),
+            tf.keras.layers.Conv2D(256, 3, activation="relu", padding='same'),
+            tf.keras.layers.Conv2D(256, 3, activation="relu", padding='same'),
+            tf.keras.layers.MaxPooling2D(2),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(128, activation='relu'),
+            tf.keras.layers.Dropout(.5),
+            tf.keras.layers.Dense(64, activation='relu'),
+            tf.keras.layers.Dropout(.5),
+            tf.keras.layers.Dense(5, activation='softmax'),
+        ])
+
+        # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
+        # gradient descent to improve training
+        optimizer = keras.optimizers.Adam(learning_rate=LEARNINGRATE)
+
+        # configure model for training
+        model.compile(
+            optimizer=optimizer,
+            loss=tf.losses.SparseCategoricalCrossentropy(),
+            metrics=['accuracy'])
 
     # callbacks that are triggered during training, create checkpoints
     # cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=CPPATH, save_weights_only=True, verbose=1)
@@ -135,7 +145,9 @@ def main(EPOCHS, WAB_FLAG):
 
     print("succesfully trained")
 
+    atexit.register(strategy._extended._collective_ops._pool.close) # type: ignore
+
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS=50, WAB_FLAG=False)
+    main(EPOCHS=3, WAB_FLAG=True, add_tags=['testrun02'])
