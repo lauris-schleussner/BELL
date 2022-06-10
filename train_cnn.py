@@ -104,9 +104,9 @@ def main(EPOCHS, WAB_FLAG, add_tags=list(), savemodel=True):
             tf.keras.layers.MaxPooling2D(2),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dropout(.5),
+            tf.keras.layers.Dropout(.25),
             tf.keras.layers.Dense(64, activation='relu'),
-            tf.keras.layers.Dropout(.5),
+            tf.keras.layers.Dropout(.25),
             tf.keras.layers.Dense(5, activation='softmax'),
         ])
 

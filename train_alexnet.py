@@ -108,10 +108,10 @@ def main(EPOCHS, WAB_FLAG, add_tags=list(), savemodel=True):
             keras.layers.Flatten(),
 
             keras.layers.Dense(4096, activation = "relu"),
-            keras.layers.Dropout(0.5),
+            keras.layers.Dropout(0.25),
             keras.layers.Dense(4096, activation = "relu"),
-            keras.layers.Dropout(0.5),
-            keras.layers.Dense(5, activation = "relu")
+            keras.layers.Dropout(0.25),
+            keras.layers.Dense(5, activation = "softmax")
         ])
 
         # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."

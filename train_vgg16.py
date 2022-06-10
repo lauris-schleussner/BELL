@@ -78,8 +78,6 @@ def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list(), savemodel=True):
     val_ds = val_ds.map(preprocess_image)
     test_ds = test_ds.map(preprocess_image)
 
-
-
     # info
     print("train_ds", train_ds.cardinality())
     print("val_ds", val_ds.cardinality())
@@ -119,7 +117,24 @@ def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list(), savemodel=True):
             model = tf.keras.Model(pretrained_model.input, outputs)
 
         else:
-            model = tf.keras.applications.vgg16.VGG16(include_top=True, weights=None, input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max, classes = 5)
+            model = tf.keras.applications.vgg16.VGG16(  include_top=False, 
+                                                        weights=None, 
+                                                        input_shape=(IMGSIZE, IMGSIZE, 3), 
+                                                        pooling=max, 
+                                                        # classes=5,
+                                                        # classifier_activation='relu'
+                                                    )
+            model.trainable = True
+
+            # add model and global pooling
+            # x = tf.keras.layers.GlobalAveragePooling2D()(model.output)
+            # flatten needed?
+            x = tf.keras.layers.Flatten()(model.output)
+            # add model and global pooling
+            outputs = tf.keras.layers.Dense(5, activation='softmax')(x)
+
+            # combine model
+            model = tf.keras.Model(model.input, outputs)
 
         model.summary()
 
@@ -162,4 +177,5 @@ def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list(), savemodel=True):
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS=3, WAB_FLAG=True, pretrained=True, add_tags=['testrun'], savemodel=False)
+    # main(EPOCHS=3, WAB_FLAG=True, pretrained=True, add_tags=['testrun'], savemodel=False)
+    main(EPOCHS=3, WAB_FLAG=False, pretrained=False, savemodel=False)

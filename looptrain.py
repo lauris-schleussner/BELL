@@ -10,9 +10,9 @@ import os
 import distutils.dir_util
 
 
-PARAM_EPOCHS = 50
+PARAM_EPOCHS = 30
 PARAM_WAB = True
-GROUP_RUN_TAG = 'looprun01'
+GROUP_RUN_TAG = 'looprun03'
 TAGS = [GROUP_RUN_TAG]
 
 for i in range(10):
