@@ -10,11 +10,11 @@ import os
 import distutils.dir_util
 
 
-PARAM_EPOCHS = 200 # 200
+PARAM_EPOCHS = 100 # 200
 AE_PARAM_EPOCHS = 3
 PARAM_WAB = True
-GROUP_RUN_TAG = 'comprun03'
-TAGS = [GROUP_RUN_TAG]
+GROUP_RUN_TAG = 'comprun06'
+TAGS = [GROUP_RUN_TAG, 'olddb', '244px', 'tuned_lr']
 
 os.system('rm -r models')
 os.system('rm -r visualisations_out')
@@ -62,3 +62,6 @@ cfm_history.main(train_xception.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, pr
 
 # print("training encoder")
 # train_autoencoder.main(EPOCHS = AE_PARAM_EPOCHS)
+
+os.system('tar -zcvf '+GROUP_RUN_TAG+'_models.tar.gz models/')
+os.system('tar -zcvf '+GROUP_RUN_TAG+'_viz.tar.gz visualisations_out/')

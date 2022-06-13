@@ -135,7 +135,8 @@ def main(inpath = "wikiart-master/saved/",
 
     # 0 init multiprocessing and create relevant directories or dependancy code fails
     print("number of cores used:" , cores)
-    pool = mp.Pool(cores)
+    # pool = max(mp.Pool(cores-10), 2)
+    pool = mp.Pool(1)
 
     try:
         os.mkdir(outfolderresized)

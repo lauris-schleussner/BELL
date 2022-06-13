@@ -20,8 +20,8 @@ from bellutils.get_datasets import get_datasets
 
 # network parameter settings
 BATCHSIZE = 32
-LEARNINGRATE = 0.001 # default Adam learning rate
-IMGSIZE = 100 # 244 # images are rescaled to a square, size in px
+LEARNINGRATE = 0.0001 # 0.001 # default Adam learning rate
+IMGSIZE = 244 # 100 # 244 # images are rescaled to a square, size in px
 
 # paths
 DBNAME = "database.db"
@@ -153,4 +153,5 @@ def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list(), savemodel=True):
     return [model, history, test_ds]
 
 if __name__ == "__main__":
-    main(EPOCHS=3, WAB_FLAG=True, pretrained=True, add_tags=['testrun'], savemodel=False)
+    # main(EPOCHS=3, WAB_FLAG=True, pretrained=True, add_tags=['testrun'], savemodel=False)
+    main(EPOCHS=3, WAB_FLAG=False, pretrained=False, savemodel=False)

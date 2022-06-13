@@ -18,10 +18,13 @@ import atexit
 # getting the dataset from the database has been outsourced
 from bellutils.get_datasets import get_datasets
 
+# callback to stop training if val_acc tanked
+from customcbs import StopIfValAccTanked
+
 # network parameter settings
 BATCHSIZE = 32
-LEARNINGRATE = 0.001 # default Adam learning rate
-IMGSIZE = 100 # 244 # images are rescaled to a square, size in px
+LEARNINGRATE = 0.0001 # 0.001 # default Adam learning rate
+IMGSIZE = 244 # 100 # 244 # images are rescaled to a square, size in px
 
 # paths
 DBNAME = "database.db"
@@ -50,7 +53,7 @@ def preprocess_image(filename, label):
     return image, label
 
 
-def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list(), savemodel=True):
+def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list(), savemodel=True, stop_tanked=False):
 
     if WAB_FLAG:
         run_tags = ['vgg16']
@@ -156,6 +159,9 @@ def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list(), savemodel=True):
         callbacks = [es_callback, WandbCallback(save_model = False)]
     else:
         callbacks = [es_callback]
+    
+    if stop_tanked:
+        callbacks += [StopIfValAccTanked()]
 
     history = model.fit(
         train_ds,
@@ -178,4 +184,4 @@ def main(EPOCHS, WAB_FLAG, pretrained, add_tags=list(), savemodel=True):
 
 if __name__ == "__main__":
     # main(EPOCHS=3, WAB_FLAG=True, pretrained=True, add_tags=['testrun'], savemodel=False)
-    main(EPOCHS=3, WAB_FLAG=False, pretrained=False, savemodel=False)
+    main(EPOCHS=3, WAB_FLAG=False, pretrained=False, savemodel=False, stop_tanked=True)

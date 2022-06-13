@@ -9,5 +9,6 @@
         "**/models/**": true,
         "**/wikiart-master/saved/*/**": true,
         "**/wikiart-master/saved/**": true
-      }
+      },
+      "git.ignoreLimitWarning": true
 }

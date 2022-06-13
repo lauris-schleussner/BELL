@@ -5,8 +5,9 @@ __pycache__/
 
 # C extensions
 *.so
-resized
+resized*
 originalsize
+comprun*
 
 autoenc/resized
 trained/
