@@ -13,7 +13,6 @@ autoenc/resized
 trained/
 untrained/
 cpoint/
-.vscode/
 IADataset/
 wikiart-master/.gitignore
 wikiart-master/LICENSE
