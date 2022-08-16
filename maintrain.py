@@ -13,7 +13,7 @@ import distutils.dir_util
 PARAM_EPOCHS = 100 # 200
 AE_PARAM_EPOCHS = 3
 PARAM_WAB = True
-GROUP_RUN_TAG = 'comprun06'
+GROUP_RUN_TAG = 'new_resnet_runs'
 TAGS = [GROUP_RUN_TAG, 'olddb', '244px', 'tuned_lr']
 
 os.system('rm -r models')
@@ -28,21 +28,21 @@ if not os.path.isdir("visualisations_out"):
     print("creating visualisation directory")
     os.mkdir("visualisations_out")
 
-# first network
-print("training cnn1")
-cfm_history.main(train_cnn.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, add_tags=TAGS), plottitle="CNN 1")
+# # first network
+# print("training cnn1")
+# cfm_history.main(train_cnn.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, add_tags=TAGS), plottitle="CNN 1")
 
-# alexnet
-print("training alexnet")
-cfm_history.main(train_alexnet.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, add_tags=TAGS), plottitle="AlexNet")
+# # alexnet
+# print("training alexnet")
+# cfm_history.main(train_alexnet.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, add_tags=TAGS), plottitle="AlexNet")
 
-# vgg16 no weights
-print("training vgg16 without weights")
-cfm_history.main(train_vgg16.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, pretrained=False, add_tags=TAGS), plottitle="VGG16 newly trained")
+# # vgg16 no weights
+# print("training vgg16 without weights")
+# cfm_history.main(train_vgg16.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, pretrained=False, add_tags=TAGS), plottitle="VGG16 newly trained")
 
-# vgg16 with weights
-print("training vgg16 with pretrained weights")
-cfm_history.main(train_vgg16.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, pretrained=True, add_tags=TAGS), plottitle="VGG16 pretrained")
+# # vgg16 with weights
+# print("training vgg16 with pretrained weights")
+# cfm_history.main(train_vgg16.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, pretrained=True, add_tags=TAGS), plottitle="VGG16 pretrained")
 
 # resnet no weights
 print("training resnet50 without weights")
@@ -52,13 +52,13 @@ cfm_history.main(train_resnet50.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, pr
 print("training resnet50 with pretrained weigths")
 cfm_history.main(train_resnet50.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, pretrained=True, add_tags=TAGS), plottitle="ResNet50 pretrained")
 
-# xception new weights
-print("training xception without weigths")
-cfm_history.main(train_xception.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, pretrained=False, add_tags=TAGS), plottitle="Xception newly trained")
+# # xception new weights
+# print("training xception without weigths")
+# cfm_history.main(train_xception.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, pretrained=False, add_tags=TAGS), plottitle="Xception newly trained")
 
-# xception pretrained weights
-print("training xception with pretrained weigths")
-cfm_history.main(train_xception.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, pretrained=True, add_tags=TAGS), plottitle="Xception pretrained")
+# # xception pretrained weights
+# print("training xception with pretrained weigths")
+# cfm_history.main(train_xception.main(EPOCHS=PARAM_EPOCHS, WAB_FLAG=PARAM_WAB, pretrained=True, add_tags=TAGS), plottitle="Xception pretrained")
 
 # print("training encoder")
 # train_autoencoder.main(EPOCHS = AE_PARAM_EPOCHS)
