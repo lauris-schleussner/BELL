@@ -1,5 +1,6 @@
 {
     "python.linting.enabled": false,
+    "workbench.list.openMode": "doubleClick",
     "python.analysis.autoImportCompletions": false,
     "files.watcherExclude": {
         "**/.git/objects/**": true,
