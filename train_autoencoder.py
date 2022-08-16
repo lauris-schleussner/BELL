@@ -11,9 +11,22 @@ from tqdm import tqdm
 import pickle
 import os
 
+import tensorflow as tf
+import atexit
+
+# W&B stuff
+import wandb
+from wandb.keras import WandbCallback
+# callback to stop training if val_acc tanked
+from customcbs import StopIfValAccTanked
+
 # https://www.analyticsvidhya.com/blog/2021/01/querying-similar-images-with-tensorflow/
 
-def main(EPOCHS):
+def main(EPOCHS, WAB_FLAG, add_tags=list()):
+
+  if WAB_FLAG:
+        run_tags = ['autoencoder']
+        wandb.init(project="bell", entity="lauris_bell", tags=run_tags+add_tags)
 
   # Load images
   img_height = 244
@@ -43,52 +56,70 @@ def main(EPOCHS):
   if not os.path.isdir("autoenc/resized"):
     raise ValueError("No folder found, was the 'resized' folder copied to 'autoenc/resized'?")
 
-  # Define the autoencoder
-  input_model = Input(shape=(img_height, img_width, channels))
+  # Create a MirroredStrategy.
+  strategy = tf.distribute.MirroredStrategy()
+  print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
-  # Encoder layers
-  encoder = Conv2D(32, (3,3), padding='same', kernel_initializer='normal')(input_model)
-  encoder = LeakyReLU()(encoder)
-  encoder = BatchNormalization(axis=-1)(encoder)
+  # Open a strategy scope.
+  with strategy.scope():
+      # Everything that creates variables should be under the strategy scope.
+      # In general this is only model construction & `compile()`.
+      # load model
+    # Define the autoencoder
+    input_model = Input(shape=(img_height, img_width, channels))
 
-  encoder = Conv2D(64, (3,3), padding='same', kernel_initializer='normal')(encoder)
-  encoder = LeakyReLU()(encoder)
-  encoder = BatchNormalization(axis=-1)(encoder)
+    # Encoder layers
+    encoder = Conv2D(32, (3,3), padding='same', kernel_initializer='normal')(input_model)
+    encoder = LeakyReLU()(encoder)
+    encoder = BatchNormalization(axis=-1)(encoder)
 
-  encoder = Conv2D(64, (3,3), padding='same', kernel_initializer='normal')(input_model)
-  encoder = LeakyReLU()(encoder)
-  encoder = BatchNormalization(axis=-1)(encoder)
+    encoder = Conv2D(64, (3,3), padding='same', kernel_initializer='normal')(encoder)
+    encoder = LeakyReLU()(encoder)
+    encoder = BatchNormalization(axis=-1)(encoder)
 
-  encoder_dim = K.int_shape(encoder)
-  encoder = Flatten()(encoder)
+    encoder = Conv2D(64, (3,3), padding='same', kernel_initializer='normal')(input_model)
+    encoder = LeakyReLU()(encoder)
+    encoder = BatchNormalization(axis=-1)(encoder)
 
-  # Latent Space
-  latent_space = Dense(16, name='latent_space')(encoder)
+    encoder_dim = K.int_shape(encoder)
+    encoder = Flatten()(encoder)
 
-  # Decoder Layers
-  decoder = Dense(np.prod(encoder_dim[1:]))(latent_space)
-  decoder = Reshape((encoder_dim[1], encoder_dim[2], encoder_dim[3]))(decoder)
+    # Latent Space
+    latent_space = Dense(16, name='latent_space')(encoder)
 
-  decoder = Conv2DTranspose(64, (3,3), padding='same', kernel_initializer='normal')(decoder)
-  decoder = LeakyReLU()(decoder)
-  decoder = BatchNormalization(axis=-1)(decoder)
+    # Decoder Layers
+    decoder = Dense(np.prod(encoder_dim[1:]))(latent_space)
+    decoder = Reshape((encoder_dim[1], encoder_dim[2], encoder_dim[3]))(decoder)
 
-  decoder = Conv2DTranspose(64, (3,3), padding='same', kernel_initializer='normal')(decoder)
-  decoder = LeakyReLU()(decoder)
-  decoder = BatchNormalization(axis=-1)(decoder)
+    decoder = Conv2DTranspose(64, (3,3), padding='same', kernel_initializer='normal')(decoder)
+    decoder = LeakyReLU()(decoder)
+    decoder = BatchNormalization(axis=-1)(decoder)
 
-  decoder = Conv2DTranspose(32, (3,3), padding='same', kernel_initializer='normal')(decoder)
-  decoder = LeakyReLU()(decoder)
-  decoder = BatchNormalization(axis=-1)(decoder)
+    decoder = Conv2DTranspose(64, (3,3), padding='same', kernel_initializer='normal')(decoder)
+    decoder = LeakyReLU()(decoder)
+    decoder = BatchNormalization(axis=-1)(decoder)
 
-  decoder = Conv2DTranspose(3, (3, 3), padding="same")(decoder)
-  output = Activation('sigmoid', name='decoder')(decoder)
+    decoder = Conv2DTranspose(32, (3,3), padding='same', kernel_initializer='normal')(decoder)
+    decoder = LeakyReLU()(decoder)
+    decoder = BatchNormalization(axis=-1)(decoder)
 
-  # Create model object
-  autoencoder = Model(input_model, output, name='autoencoder')
+    decoder = Conv2DTranspose(3, (3, 3), padding="same")(decoder)
+    output = Activation('sigmoid', name='decoder')(decoder)
 
-  # Compile the model
-  autoencoder.compile(loss="mse", optimizer= Adam(learning_rate=1e-3))
+    # Create model object
+    autoencoder = Model(input_model, output, name='autoencoder')
+
+    # Compile the model
+    autoencoder.compile(loss="mse", optimizer= Adam(learning_rate=1e-3))
+
+  # Build Callbacks
+  cbs = [ModelCheckpoint('autoenc/models/image_autoencoder_2.h5', 
+                                        monitor='val_loss', 
+                                        verbose=0, 
+                                        save_best_only=True, 
+                                        save_weights_only=False)]
+  if WAB_FLAG:
+      cbs += [WandbCallback(save_model = False)]
 
   # Fit the model
   history = autoencoder.fit_generator(
@@ -97,11 +128,10 @@ def main(EPOCHS):
             epochs = EPOCHS,
             validation_data=validation_set,
             validation_steps=validation_set.n // batch_size,
-            callbacks = [ModelCheckpoint('autoenc/models/image_autoencoder_2.h5', 
-                                        monitor='val_loss', 
-                                        verbose=0, 
-                                        save_best_only=True, 
-                                        save_weights_only=False)])
+            callbacks = cbs)
+  
+  if WAB_FLAG:
+        wandb.finish()
 
   autoencoder.summary()
 
@@ -113,7 +143,12 @@ def main(EPOCHS):
   X = []
   indices = []
 
+  break_count = 0
   for i in tqdm(range(len(os.listdir('./autoenc/resized')))):
+    if break_count > 20:
+      break
+    else:
+      break_count += 1
     try:
       img_name = os.listdir('./autoenc/resized')[i]
       img = load_img('./autoenc/resized/{}'.format(img_name), 
@@ -133,6 +168,9 @@ def main(EPOCHS):
   embeddings = {'indices': indices, 'features': np.array(X)}
   pickle.dump(embeddings, 
               open('./autoenc/image_embeddings.pickle', 'wb'))
+
+  atexit.register(strategy._extended._collective_ops._pool.close) # type: ignore
+
 
 
 if __name__ == "__main__":
