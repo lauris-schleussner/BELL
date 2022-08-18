@@ -143,12 +143,9 @@ def main(EPOCHS, WAB_FLAG, add_tags=list()):
   X = []
   indices = []
 
-  break_count = 0
+  
   for i in tqdm(range(len(os.listdir('./autoenc/resized')))):
-    if break_count > 20:
-      break
-    else:
-      break_count += 1
+    
     try:
       img_name = os.listdir('./autoenc/resized')[i]
       img = load_img('./autoenc/resized/{}'.format(img_name), 
