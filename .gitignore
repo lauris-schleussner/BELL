@@ -58,6 +58,8 @@ MANIFEST
 *.manifest
 *.spec
 
+cat_dog_model/*
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
