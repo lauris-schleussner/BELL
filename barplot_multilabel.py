@@ -1,6 +1,4 @@
 from matplotlib import pyplot as plt
-import numpy
-import pandas
 
 '''
 data = []
@@ -33,19 +31,19 @@ data = sorted(data, key=lambda l: int(l[1]), reverse=True)
 c = 0
 for i in data:
     c += 1
-    if c >= 10:
+    if c >= 6: # only take 5-1 classcombinations
         break
 
-    style.append(i[0])
+    labels = i[0]
+    labels = labels.replace("+", "\n") # add linebreaks
+
+    style.append(labels)
     amount.append(int(i[1]))
 
 print(style)
 
 plt.bar(style, amount)
 plt.title("Häufigste Klassenkombinationen")
-plt.xlabel("Kombinationen")
-plt.ylabel("Anzahl")
-
-
+plt.xticks(fontsize=13)
 
 plt.show()

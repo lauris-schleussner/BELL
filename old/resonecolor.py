@@ -34,14 +34,14 @@ for path  in tqdm(filenames):
 
 
 
-
+"""
 plt.hist(ratio, density = True,  bins = 100, range = (1,2))
 plt.title("Seitenverhältnis")
 plt.yticks([]) 
-
-
+plt.xticks(fontsize=13)
 """
-plt.scatter(wlist, hlist)
+
+plt.scatter(wlist, hlist, s=5)
 
 plt.xlim(0, 5000)
 plt.ylim(0, 5000)
@@ -50,13 +50,12 @@ plt.xlim(0, 5000)
 plt.ylim(0, 5000)
 plt.gca().set_aspect('equal', adjustable='box')
 
+plt.xticks(fontsize=13)
+plt.yticks(fontsize=13)
 
 
 
 plt.title("Bildgröße")
-plt.xlabel("Breite in px")
-plt.ylabel("Höhe in px")
-"""
 plt.show()
 
 

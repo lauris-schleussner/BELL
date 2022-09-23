@@ -14,7 +14,7 @@ c = conn.cursor()
 
 res = c.execute("SELECT filename, path FROM artworks WHERE corrupt = False").fetchall()
 
-bins = np.array([1750, 1770, 1790, 1810,1830,1850,1870,1890,1910,1930, 1950])
+bins = np.array([1770, 1790, 1810,1830,1850,1870,1890,1910,1930, 1950])
 
 sizedict = {}
 
@@ -41,7 +41,7 @@ for path, year in tqdm(data):
     sizedict[dict_key].append(max([w,h])/min([w,h]))
 
 # init plot
-fig, axs = plt.subplots(1,len(bins))
+fig, axs = plt.subplots(2,5)
 fig.subplots_adjust(hspace = .5, wspace=.2)
 axs = axs.ravel()
 
@@ -53,6 +53,7 @@ for idx, ax in enumerate(axs):
     ax.hist(sizedict[year], density = True,  bins = 50, range = (1,2))
     ax.set_title(str(year) + "  n=" + str(len(sizedict[year])))
     ax.set_yticks([]) 
+    ax.tick_params(axis="x", labelsize=12)
     
 
 
