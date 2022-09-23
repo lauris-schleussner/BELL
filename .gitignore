@@ -25,8 +25,12 @@ resized_1/
 originalsizeclean/
 originalsizedirty/
 
-workspace.code-workspace
+image_embed*
+image_embed_*
 
+workspace.code-workspace
+test/PetImages
+test/training_set
 # Distribution / packaging
 .Python
 build/
