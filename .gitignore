@@ -26,7 +26,7 @@ originalsizeclean/
 originalsizedirty/
 
 image_embed*
-image_embed_*
+img_embed_*
 
 workspace.code-workspace
 test/PetImages
