@@ -10,8 +10,7 @@ import datetime
 import numpy
 
 
-
-# create connection to database
+ # create connection to database
 conn = sqlite3.connect("database.db")
 c = conn.cursor()
 
@@ -39,12 +38,16 @@ for filename, style in tqdm(fulllist):
     w = w/2000 
     h = h/2000
 
+    # calculate aspect ratio
+    ar = min([w,h]) / max([w,h])
+
+
     idx = classlist.index(style)
     label = [0]*len(classlist)
     label[idx] = 1
 
     stylelist.append(label)
-    dimensionlist.append([w,h])
+    dimensionlist.append(ar)
 
 
 trainstyle_ds = np.asarray(stylelist[0:6014])
@@ -72,7 +75,7 @@ model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
 model = tf.keras.Sequential([
     
-    tf.keras.Input(shape=(2,)),
+    tf.keras.Input(shape=(1,)),
     tf.keras.layers.Dense(128, activation="relu"),
     tf.keras.layers.Dense(256, activation="relu"),
     tf.keras.layers.Dropout(.2),
@@ -144,7 +147,7 @@ for i in range(conf_matrix.shape[0]):
     for j in range(conf_matrix.shape[1]):
         ax.text(x=j, y=i,s=conf_matrix[i, j], va='center', ha='center', size='xx-large')
 
-plottitle = "sizeclass"
+plottitle = "sizeclass_only_ac"
 outfolder = "E:/BELL/plots/"
 
 plt.xlabel('Predictions', fontsize=18)
@@ -164,6 +167,5 @@ dafr.plot(figsize=(8,5))
 
 plt.grid(True)
 plt.gca().set_ylim(0.2, 0.35)
-plt.xticks(fontsize=12)
 plt.savefig(outfolder + plottitle + '_history.png', dpi=500)
 print("saved plotting results for", plottitle)
