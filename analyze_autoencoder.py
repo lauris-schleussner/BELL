@@ -7,10 +7,10 @@ from tqdm import tqdm
 
 
 # filename to which simmilar images will be found
-filename_to_compare = "190420.jpg"
+filename_to_compare = "185131.jpg"
 
 # open encodings produced from similar_autoencoder.py
-encodings = pickle.load(open("autoenc\image_embeddings_old.pickle", "rb" ))
+encodings = pickle.load(open("E:\BELL\img_embed_autoenc_afterumap.pickle", "rb" ))
 
 # extract list of all files and encodings
 all_files = encodings["indices"]
@@ -37,7 +37,7 @@ for encoding, index in tqdm(zip(all_encodings, range(0,len(all_encodings)))):
 sorted_dict = dict(sorted(filename_dist_dict.items(), key=lambda item: item[1]))
 
 # get first {topnumber} matches
-topnumber = 3
+topnumber = 9
 firstXpairs = {k: sorted_dict[k] for k in list(sorted_dict)[:topnumber]}
 
 # list all indices
