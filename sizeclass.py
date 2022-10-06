@@ -9,10 +9,9 @@ import tensorflow as tf
 import datetime
 import numpy
 
-
-
-# create connection to database
-conn = sqlite3.connect("database.db")
+source = sqlite3.connect("database.db")
+conn = sqlite3.connect(':memory:')
+source.backup(conn)
 c = conn.cursor()
 
 # get list of all unique styles returns list of tupels with one datapair each
@@ -159,7 +158,7 @@ dafr = pd.DataFrame(history.history)
 print(dafr)
 dafr = dafr.drop(columns = ["accuracy", "loss", "val_loss"])
 
-dafr.plot(figsize=(8,5))
+dafr.plot(figsize=(8,5), xlabel = "Epochen", ylabel = "Genauigkeit", title="Trainingsverlauf für Stilklassifizierung anhand von genauer Bildgröße", fontsize = 13  )
 
 
 plt.grid(True)

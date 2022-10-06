@@ -91,6 +91,7 @@ def main(EPOCHS, pretrained):
     else:
         model = tf.keras.applications.xception.Xception(include_top=True, weights=None, input_shape= (IMGSIZE, IMGSIZE, 3), pooling=max, classes = 5)
 
+    model.summary()
 
     # "Optimizers are algorithms or methods used to change the attributes of your neural network such as weights and learning rate in order to reduce the losses."
     # gradient descent to improve training

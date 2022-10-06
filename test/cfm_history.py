@@ -15,11 +15,24 @@ def main(traindata, plottitle):
 
     outfolder = "E:/BELL/plots/"
 
+    # plot history
+    pd.DataFrame(history.history).plot(figsize=(8,5))
+    plt.grid(True)
+    # plt.gca().set_ylim(0, 1)
+    plt.savefig(outfolder + plottitle + '_history.png', dpi=500)
+    print("saved plotting results for", plottitle)
+
+
+    """
+
+
+
+
     # might work with batching
     images, labels = tuple(zip(*test_ds)) 
 
-    # print(tf.shape(images))
-
+    print(tf.shape(images))
+    quit()
 
     # build one batch with all test pictures 
     # Final tensor format (Number of Pictures, IMGSIZE, IMGSIZE, 3)
@@ -68,6 +81,6 @@ def main(traindata, plottitle):
     plt.savefig(outfolder + plottitle + '_history.png', dpi=500)
     print("saved plotting results for", plottitle)
 
-
+ """
 if __name__ == "__main__":
     print("please dont directly execute this script")

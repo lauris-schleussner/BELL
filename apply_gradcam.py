@@ -7,10 +7,18 @@ from IPython.display import Image, display
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
+
+imgpath = "E:/BELL/test/PetImages/Dog/3.jpg"
+modelpath = "E:/BELL/cat_dog_model/cat_dog_model_besser_xception_larger"
+size = (256,256)
+last_conv_layer_name = "block14_sepconv2_act"
+
+"""
 imgpath = "E:/BELL/resized/185058.jpg"
 modelpath = "E:/BELL/models/saved_xception"
 size = (244,244)
 last_conv_layer_name = "block14_sepconv2_act"
+"""
 
 # input path and filename under which resulting img should be saved
 def main(imgpath, filename):
@@ -22,8 +30,7 @@ def main(imgpath, filename):
     # We add a dimension to transform our array into a "batch"
     # of size (1, 299, 299, 3)
     img_array = np.expand_dims(img_array, axis=0)
-    img_array = keras.applications.xception.preprocess_input(img_array)
-
+    #img_array = keras.applications.xception.preprocess_input(img_array)
 
     model = keras.models.load_model(modelpath)
 
@@ -91,3 +98,5 @@ def main(imgpath, filename):
     superimposed_img.save("gcresults/gradcamresults_ " + str(filename) + ".jpg")
 
     return superimposed_img
+
+main(imgpath, filename="dogs_cat_2" )
